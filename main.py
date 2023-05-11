@@ -20,19 +20,16 @@ from modules.colormesh_plots import colormesh_plots
 print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
-train_mod = False
-train_ev = False
-test_ev = False
-surface_pl = True
-colormesh_pl = False
-system_ev = [] #0,1,2,'val_data_sin','val_data_lin'
+model_training = False      # False, 'rf', 'nn' or 'all'.
+model_evaluation = False    # False, 'train', 'test', 'all'
+plots = []                  # ['surface', 'colormesh']
+system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
-                       '\ntrain_mod = {}'.format(train_mod),
-                       '\ntrain_ev = {}'.format(train_ev),
-                       '\ntest_ev = {}'.format(test_ev),
+                       '\nmodel_training = {}'.format(model_training),
+                       '\nmodel_evaluation = {}'.format(model_evaluation),
                        '\nsystem_ev = {}'.format(system_ev),
-                       '\nsurface_pl = {}'.format(surface_pl)])
+                       '\nplots = {}'.format(plots)])
 
 # Record starting run time
 start_time = time.time()
@@ -74,6 +71,7 @@ lower_bound = q1 - (2000 * (q3 - q1))
 upper_bound = q3 + (2000 * (q3 - q1))
 outliers = np.any((y_train < lower_bound) | (y_train > upper_bound), axis=1)
 
+# Plot the data highliting the removed outliers
 fig, ax = plt.subplots(figsize=(15,9))
 ax.plot(y_train[~outliers][:,0], y_train[~outliers][:,1], '.k')
 ax.plot(y_train[outliers][:,0], y_train[outliers][:,1], '.r')
@@ -92,9 +90,9 @@ run_summary += "".join(['\n\n***DATA***',
                         '\noutliers_removed = {}'.format(np.sum(outliers))])
 print('Successfully loaded and formatted data...')
 
-# Train the models if set to True
-if train_mod != False:
-  train_models(X_train, X_val, y_train, y_val, mode=train_mod)
+# Train the models if specified
+if model_training != False:
+  train_models(X_train, X_val, y_train, y_val, mode=model_training)
 
 # Load the models
 nnetwork = load_model(os.path.join('data', 'nn_model.h5'), compile=False)
@@ -114,14 +112,14 @@ rforest.__dict__ = rf_params.__dict__
 with open(os.path.join('data','train_summary.pkl'), 'rb') as f:
     rf_summary, nn_summary = pickle.load(f)
 
-# Evaluate the training data if set to True
-if train_ev:
+# Evaluate the training data specified in model_evaluation
+if (model_evaluation=='train' or model_evaluation=='all'):
   train_summary = train_eval(rforest, nnetwork, X_train, y_train, X_val, y_val)
   rf_summary += train_summary[0]
   nn_summary += train_summary[1]
 
 # Evaluate the test data if set to True
-if test_ev:
+if (model_evaluation=='test' or model_evaluation=='all'):
   test_summary = test_eval(nnetwork, rforest, X_test, y_test)
   rf_summary += test_summary[0]
   nn_summary += test_summary[1]
@@ -131,11 +129,11 @@ run_summary += rf_summary
 run_summary += nn_summary
 
 # Plot the predicted rate of change for B and D at critical g if set to True
-if surface_pl:
+if 'surface' in plots:
   run_summary += surface_plots(nnetwork, rforest)
 
 # Plot the predicted rate of change for B and D at critical g if set to True
-if colormesh_pl:
+if 'colormesh' in plots:
   run_summary += colormesh_plots(X_train, y_train)
 
 # Make a prediction of the evolution of the system for each simulation in X_ev
