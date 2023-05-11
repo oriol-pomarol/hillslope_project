@@ -22,7 +22,7 @@ print('Successfully imported libraries and modules.')
 # Set which functionalities to use
 model_training = False      # False, 'rf', 'nn' or 'all'.
 model_evaluation = False    # False, 'train', 'test', 'all'
-plots = []                  # ['surface', 'colormesh']
+plots = []                  # ['surface', 'colormesh', 'tipping']
 system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
