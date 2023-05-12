@@ -1,19 +1,16 @@
 import numpy as np
-import pickle
 import matplotlib.pyplot as plt
-import matplotlib.ticker as tck
-from matplotlib import colors
 import os
 
 def tipping_evolution(model):
 
   # Define some parameters
   print('Starting tipping point evolution...')
-  g_tipping = 1.92    # value of g of the tipping point
+  g_tipping = 1.93    # value of g of the tipping point
   Bo = 1.95  	        # initial value of B, ideally close to the equilibrium
   Do = 0.41           # initial value of D, ideally close to the equilibrium
   dt = 0.5 			      # time step, 7/365 in paper, 0.5 for general purpose
-  n_steps = 1e4       # number of steps to run
+  n_steps = 1000       # number of steps to run
 
   # Initialize B and D
   B_ev = np.ones((n_steps)) * Bo
@@ -36,7 +33,7 @@ def tipping_evolution(model):
   print('Successfully completed tipping point evolution.')
 
   # Save the results
-  saved_vars = [B_ev, D_ev, g_tipping]
+  saved_vars = [B_ev, D_ev, np.ones_like(B_ev) * g_tipping]
   header_vars = 'B_ev, D_ev, g_tipping'
   file_path = os.path.join('results', 'tipping_evolution.csv')
   np.savetxt(file_path, np.column_stack(saved_vars), delimiter=',', header = header_vars)
@@ -82,6 +79,7 @@ def tipping_evolution(model):
     solid_lines = [] 
     lines = contour.allsegs[0]
     for line in lines:
+      line = np.flip(line, axis=1)
       indices = (np.array(line)//np.array([(B_lim+1E-5)/n_sq, (D_lim+1E-6)/n_sq])).astype(int)
       stability = grad_stab[indices[:,0], indices[:,1]]
       current_line = line[0]
@@ -105,15 +103,15 @@ def tipping_evolution(model):
     # Plot the lines
     for i, d_line in enumerate(dashed_lines):
       d_line = np.array(d_line)
-      ax.plot(d_line[:,1], d_line[:,0], linestyle = 'dashed', linewidth=5, color = color,
+      ax.plot(d_line[:,1], d_line[:,0], linestyle = 'dashed', linewidth=3, color = color,
               label = f'Unstable {var} nullcline' if i==0 else "")
 
     for i, s_line in enumerate(solid_lines):
       s_line = np.array(s_line)
-      ax.plot(s_line[:,1], s_line[:,0], linestyle = 'solid', linewidth=5, color = color,
+      ax.plot(s_line[:,1], s_line[:,0], linestyle = 'solid', linewidth=3, color = color,
               label = f'Stable {var} nullcline' if i==0 else "")
       
-    ax.plot(D_ev, B_ev, 'ko-', label = 'System evolution')
+  ax.plot(D_ev, B_ev, 'ko-', label = 'System evolution')
       
   # Set the axes properties and save the figure
   ax.set_ylim(0, B_lim)
