@@ -5,18 +5,42 @@ import os
 def tipping_evolution(model):
 
   # Define some parameters
-  print('Starting tipping point evolution...')
   g_tipping = 1.93    # value of g at the tipping point, found 1.93 to work well
-  Bo = 1.95  	        # initial value of B, ideally close to the equilibrium
-  Do = 0.41           # initial value of D, ideally close to the equilibrium
+  Bo = 1.95  	        # initial value of B, ideally close to the equilibrium e.g. 1.95
+  Do = 0.42           # initial value of D, ideally close to the equilibrium e.g. 0.42
   dt = 50 			      # time step, 7/365 in paper, 0.5 for general purpose
   n_steps = 500       # number of steps to run
+  n_steps_eq = 100    # number of steps to tune the equilibrium
 
   # Initialize B and D
-  B_ev = np.ones((n_steps)) * Bo
-  D_ev = np.ones((n_steps)) * Do
+  B_ev = np.ones((n_steps_eq)) * Bo
+  D_ev = np.ones((n_steps_eq)) * Do
+
+  # Allow the system to reach equilibrium
+  print('Starting equilibrium search...')
+  perc_steps = n_steps_eq//20
+  for step in range(1,n_steps_eq):
+    if step%perc_steps == 0:
+      print('{:.0f}% of steps completed.'.format(100*step/n_steps_eq))
+      
+    # Compute the derivatives
+    nn_slopes = model.predict(np.array([[B_ev[step-1], D_ev[step-1], g_tipping-0.01]]), verbose = False)
+
+    #compute the new values
+    B_ev[step] = np.clip(B_ev[step-1] + nn_slopes.squeeze()[0]*dt, 0, 7)
+    D_ev[step] = np.clip(D_ev[step-1] + nn_slopes.squeeze()[1]*dt, 0, 3)
+
+  # Define the values at the equilibrium as the last values in the evolution
+  B_eq = B_ev[-1]
+  D_eq = D_ev[-1]
+  print('Successfully completed equilibrium search.')
+
+  # Initialize B and D again with the equilibrium values
+  B_ev = np.ones((n_steps)) * B_eq
+  D_ev = np.ones((n_steps)) * D_eq
 
   # Allow the system to evolve
+  print('Starting tipping point evolution...')
   perc_steps = n_steps//20
   for step in range(1,n_steps):
     if step%perc_steps == 0:
@@ -121,7 +145,9 @@ def tipping_evolution(model):
   plt.savefig(os.path.join('results','tipping_evolution.png'))
 
   # Add a couple lines to the summary with the system evolution parameters
-  t_evolution_summary = "".join(['\n\nTipping evolution {}:',
-                               '\ntime_step = {}'.format(dt),
-                               '\nn_steps = {}'.format(n_steps)])
+  t_evolution_summary = "".join(['\n\n***TIPPING EVOLUTION***',
+                                 '\ntime_step = {}'.format(dt),
+                                 '\nn_steps = {}'.format(n_steps),
+                                 '\nB_eq = {}'.format(B_eq),
+                                 '\nD_eq = {}'.format(D_eq)])
   return t_evolution_summary
