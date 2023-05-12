@@ -17,12 +17,13 @@ from modules.train_eval import train_eval
 from modules.system_evolution import system_evolution
 from modules.surface_plots import surface_plots
 from modules.colormesh_plots import colormesh_plots
+from modules.tipping_evolution import tipping_evolution
 print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
 model_training = False      # False, 'rf', 'nn' or 'all'.
 model_evaluation = False    # False, 'train', 'test', 'all'
-plots = []                  # ['surface', 'colormesh', 'tipping']
+plots = ['tipping']         # ['surface', 'colormesh', 'tipping']
 system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
@@ -128,13 +129,17 @@ if (model_evaluation=='test' or model_evaluation=='all'):
 run_summary += rf_summary
 run_summary += nn_summary
 
-# Plot the predicted rate of change for B and D at critical g if set to True
+# Plot the predicted rate of change for B and D at critical g if in the plots list
 if 'surface' in plots:
   run_summary += surface_plots(nnetwork, rforest)
 
-# Plot the predicted rate of change for B and D at critical g if set to True
+# Plot colormeshes related to the observations available if in the plots list
 if 'colormesh' in plots:
   run_summary += colormesh_plots(X_train, y_train)
+
+# Plot the system evolutionat the tipping point if in the plots list
+if 'tipping' in plots:
+  run_summary += tipping_evolution(nnetwork)
 
 # Make a prediction of the evolution of the system for each simulation in X_ev
 ev_summary = '\n\n***SYSTEM EVOLUTION***'
