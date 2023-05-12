@@ -6,17 +6,15 @@ def tipping_evolution(model):
 
   # Define some parameters
   print('Starting tipping point evolution...')
-  g_tipping = 1.93    # value of g of the tipping point
+  g_tipping = 1.93    # value of g at the tipping point, found 1.93 to work well
   Bo = 1.95  	        # initial value of B, ideally close to the equilibrium
   Do = 0.41           # initial value of D, ideally close to the equilibrium
-  dt = 0.5 			      # time step, 7/365 in paper, 0.5 for general purpose
-  n_steps = 1000       # number of steps to run
+  dt = 50 			      # time step, 7/365 in paper, 0.5 for general purpose
+  n_steps = 500       # number of steps to run
 
   # Initialize B and D
   B_ev = np.ones((n_steps)) * Bo
   D_ev = np.ones((n_steps)) * Do
-
-  
 
   # Allow the system to evolve
   perc_steps = n_steps//20
@@ -39,7 +37,7 @@ def tipping_evolution(model):
   np.savetxt(file_path, np.column_stack(saved_vars), delimiter=',', header = header_vars)
 
   # Some plot parameters
-  n_sq = 18         # Number of ticks in each dimension
+  n_sq = 180         # Number of ticks in each dimension
   B_lim = 3         # Maximum value of B in the plot
   D_lim = 0.6       # Maximum value of D in the plot
 
