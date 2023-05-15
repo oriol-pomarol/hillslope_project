@@ -21,12 +21,14 @@ from modules.tipping_evolution import tipping_evolution
 print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
+remove_outliers = False     # False, True
 model_training = False      # False, 'rf', 'nn' or 'all'.
 model_evaluation = False    # False, 'train', 'test', 'all'
 plots = ['tipping']         # ['surface', 'colormesh', 'tipping']
 system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
+                       '\nremove_outliers = {}'.format(remove_outliers),
                        '\nmodel_training = {}'.format(model_training),
                        '\nmodel_evaluation = {}'.format(model_evaluation),
                        '\nsystem_ev = {}'.format(system_ev),
@@ -66,29 +68,35 @@ val_size = 0.2
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, 
                                                   test_size=val_size/(1-test_size),
                                                   shuffle=True, random_state=123)
-# Remove outliers
-q1, q3 = np.percentile(y_train, [25, 75])
-lower_bound = q1 - (2000 * (q3 - q1))
-upper_bound = q3 + (2000 * (q3 - q1))
-outliers = np.any((y_train < lower_bound) | (y_train > upper_bound), axis=1)
-
-# Plot the data highliting the removed outliers
-fig, ax = plt.subplots(figsize=(15,9))
-ax.plot(y_train[~outliers][:,0], y_train[~outliers][:,1], '.k')
-ax.plot(y_train[outliers][:,0], y_train[outliers][:,1], '.r')
-ax.set_xlabel('Biomass rate of change')
-ax.set_ylabel('Soil Depth rate of change')
-plt.savefig(os.path.join('temp', 'outlier_detection.png'))
-
-X_train, y_train = X_train[~outliers], y_train[~outliers]
-
-print(f'\n\n***\n{np.sum(outliers)} outliers removed.\n***\n\n')
-
+# Add the data characteristics to the summary
 run_summary += "".join(['\n\n***DATA***',
                         '\nn_samples = {}'.format(n_samples),
                         '\ntest_size = {}'.format(test_size),
-                        '\nval_size = {}'.format(val_size),
-                        '\noutliers_removed = {}'.format(np.sum(outliers))])
+                        '\nval_size = {}'.format(val_size)])
+# Remove outliers if requested
+if remove_outliers:
+
+  # Find the outliers
+  q1, q3 = np.percentile(y_train, [25, 75])
+  lower_bound = q1 - (2000 * (q3 - q1))
+  upper_bound = q3 + (2000 * (q3 - q1))
+  outliers = np.any((y_train < lower_bound) | (y_train > upper_bound), axis=1)
+
+  # Plot the data highliting the removed outliers
+  fig, ax = plt.subplots(figsize=(15,9))
+  ax.plot(y_train[~outliers][:,0], y_train[~outliers][:,1], '.k')
+  ax.plot(y_train[outliers][:,0], y_train[outliers][:,1], '.r')
+  ax.set_xlabel('Biomass rate of change')
+  ax.set_ylabel('Soil Depth rate of change')
+  plt.savefig(os.path.join('temp', 'outlier_detection.png'))
+
+  # Remove the outliers from the dataset
+  X_train, y_train = X_train[~outliers], y_train[~outliers]
+
+  # Add to the summary and print the number of removed outliers 
+  run_summary += '\noutliers_removed = {}'.format(np.sum(outliers))
+  print(f'\n\n***\n{np.sum(outliers)} outliers removed.\n***\n\n')
+                        
 print('Successfully loaded and formatted data...')
 
 # Train the models if specified
