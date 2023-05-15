@@ -24,7 +24,7 @@ print('Successfully imported libraries and modules.')
 remove_outliers = False     # False, True
 model_training = False      # False, 'rf', 'nn' or 'all'.
 model_evaluation = False    # False, 'train', 'test', 'all'
-plots = ['tipping']         # ['surface', 'colormesh', 'tipping']
+plots = ['surface']         # ['surface', 'colormesh', 'tipping']
 system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
