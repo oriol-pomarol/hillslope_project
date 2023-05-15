@@ -61,7 +61,7 @@ def tipping_evolution(model):
   np.savetxt(file_path, np.column_stack(saved_vars), delimiter=',', header = header_vars)
 
   # Some plot parameters
-  n_sq = 180         # Number of ticks in each dimension
+  n_sq = 180        # Resolution of the plot
   B_lim = 3         # Maximum value of B in the plot
   D_lim = 0.6       # Maximum value of D in the plot
 
