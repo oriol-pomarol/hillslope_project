@@ -222,6 +222,21 @@ def surface_plots(model, rforest):
   plt.savefig(os.path.join('results','eq_lines_nn.png'))
   plt.savefig(os.path.join('results','eq_lines_nn.eps'), format='eps')
 
+  # Find the feature space velocity and take the logarithm
+  velocity = np.sqrt(dB_dt_nn**2 + dD_dt_nn**2)
+  log_vel = np.log10(velocity+0.01)
+
+  # Initialize the streamplot
+  fig, ax = plt.subplots(figsize=(16,14))
+  stream = plt.streamplot(D_grid, B_grid, dD_dt_nn, dB_dt_nn, color=log_vel, cmap=plt.cm.brg, minlength=0.01)
+  fig.colorbar(stream.lines,cmap=plt.cm.jet)
+  ax.set_ylim(0, B_lim)
+  ax.set_xlim(0, D_lim)
+  ax.set_ylabel('Biomass ($kg/m^2$)')
+  ax.set_xlabel('Soil depth ($m$)')
+  plt.tight_layout()
+  plt.savefig(os.path.join('results','streamplot_nn.png'))
+
 
   # Save the results
   print('Saving surface plot results...')
