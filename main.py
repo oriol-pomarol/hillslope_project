@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestRegressor
 import os
 import joblib as jb
 import matplotlib.pyplot as plt
+import tensorflow.keras as keras
 from keras.models import load_model
 from modules.train_models import train_models
 from modules.test_eval import test_eval
