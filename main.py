@@ -21,11 +21,11 @@ from modules.tipping_evolution import tipping_evolution
 print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
-remove_outliers = False     # False, True
-model_training = False      # False, 'rf', 'nn' or 'all'.
-model_evaluation = False    # False, 'train', 'test', 'all'
-plots = ['surface']         # ['surface', 'colormesh', 'tipping']
-system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
+remove_outliers = False          # False, True
+model_training = False           # False, 'rf', 'nn' or 'all'.
+model_evaluation = False         # False, 'train', 'test', 'all'
+plots = []                       # ['surface', 'colormesh', 'tipping']
+system_ev = []                   # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
                        '\nremove_outliers = {}'.format(remove_outliers),
@@ -38,21 +38,31 @@ run_summary = "".join(['***MODULES***',
 start_time = time.time()
 
 # Load the data
-data_file = 'data.pkl'
+data_file = 'gd_data.pkl'
 print('Loading and formatting data...')
 with open(os.path.join('data', data_file), 'rb') as f:
-    B,D,g,dB_dt,dD_dt = pickle.load(f)
+    B_gd,D_gd,g_gd,dB_dt_gd,dD_dt_gd = pickle.load(f)
+data_file = 'data.pkl'    
+with open(os.path.join('data', data_file), 'rb') as f:
+    B_sin,D_sin,g_sin,dB_dt_sin,dD_dt_sin = pickle.load(f)
 
 # Save the necessary data for the system evolution
 X_ev = system_ev
-for i, element in enumerate(X_ev):
-  if isinstance(element, int):
-    X_ev[i] = [B[:,element], D[:,element], g[:,element]]
+#for i, element in enumerate(X_ev):
+#  if isinstance(element, int):
+X_ev[0] = [B_gd[:,0], D_gd[:,0], g_gd[:,0]]
+X_ev[1] = [B_sin[:,0], D_sin[:,0], g_sin[:,0]]
 
 # Define input and output variables and delete unnecessary data
-X = np.column_stack((B.flatten('F'),D.flatten('F'),g.flatten('F')))
-y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
-del B,D,g,dB_dt,dD_dt
+X_gd = np.column_stack((B_gd[:,:30].flatten('F'),D_gd[:,:30].flatten('F'),g_gd[:,:30].flatten('F')))
+y_gd = np.column_stack((dB_dt_gd[:,:30].flatten('F'),dD_dt_gd[:,:30].flatten('F')))
+X_sin = np.column_stack((B_sin[:,:50].flatten('F'),D_sin[:,:50].flatten('F'),g_sin[:,:50].flatten('F')))
+y_sin = np.column_stack((dB_dt_sin[:,:50].flatten('F'),dD_dt_sin[:,:50].flatten('F')))
+del B_gd,D_gd,g_gd,dB_dt_gd,dD_dt_gd, B_sin,D_sin,g_sin,dB_dt_sin,dD_dt_sin
+
+X = np.concatenate((X_gd, X_sin), axis=0)
+y = np.concatenate((y_gd, y_sin), axis=0)
+del X_gd, y_gd, X_sin, y_sin
 
 n_samples = X.shape[0]
 
@@ -60,7 +70,7 @@ n_samples = X.shape[0]
 test_size = 0.3
 X_train, X_test, y_train, y_test = train_test_split(X, y,
                                                     test_size=test_size,
-                                                    shuffle=False)
+                                                    shuffle=True)
 del X, y
 
 # Split between training and validation data
