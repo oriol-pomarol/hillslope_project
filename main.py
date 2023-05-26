@@ -22,10 +22,10 @@ print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
 remove_outliers = False     # False, True
-model_training = False      # False, 'rf', 'nn' or 'all'.
-model_evaluation = False    # False, 'train', 'test', 'all'
-plots = ['surface']         # ['surface', 'colormesh', 'tipping']
-system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
+model_training = 'nn'      # False, 'rf', 'nn' or 'all'.
+model_evaluation = 'all'    # False, 'train', 'test', 'all'
+plots = ['surface', 'colormesh']                # ['surface', 'colormesh', 'tipping']
+system_ev = [0,'val_data_sin','val_data_lin']   # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
                        '\nremove_outliers = {}'.format(remove_outliers),
@@ -50,8 +50,8 @@ for i, element in enumerate(X_ev):
     X_ev[i] = [B[:,element], D[:,element], g[:,element]]
 
 # Define input and output variables and delete unnecessary data
-X = np.column_stack((B.flatten('F'),D.flatten('F'),g.flatten('F')))
-y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
+X = np.column_stack((B[:,:60].flatten('F'),D[:,:60].flatten('F'),g[:,:60].flatten('F')))
+y = np.column_stack((dB_dt[:,:60].flatten('F'),dD_dt[:,:60].flatten('F')))
 del B,D,g,dB_dt,dD_dt
 
 n_samples = X.shape[0]

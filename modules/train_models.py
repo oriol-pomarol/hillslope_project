@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 import tensorflow as tf
 from tensorflow import keras
+from keras.callbacks import ModelCheckpoint
 from keras import backend as K
 import matplotlib.pyplot as plt
 import os
@@ -36,33 +37,27 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
       loss = K.sum(loss, axis=1) 
       return loss
 
-    # Load the hyperparameters of the model
-#     with open('data/hyperparameters.pkl', 'rb') as f:
-#         hp = pickle.load(f)
-#     print('Successfully loaded and formatted data.')
-
-    hp = {'units':[27,216,8], 'act_fun':'relu', 'learning_rate':1E-4, 'batch_size':64}
+    hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu', 'learning_rate':1E-5, 'batch_size':64}
 
     # Define the model
     nnetwork = keras.Sequential()
     for n_units in hp['units']:
       nnetwork.add(tf.keras.layers.Dense(units=n_units, activation=hp['act_fun']))
     nnetwork.add(keras.layers.Dense(2, activation='linear'))
-    
-#    # Define a LR scheduler
-#    def predefined_lr(epoch):
-#      lr_schedule = [1E-3,1E-2,1E-1,1E-2,1E-3,1E-4,1E-5]
-#      lr = lr_schedule[epoch]
-#      return lr
-#
-#    lr_scheduler = LearningRateScheduler(predefined_lr)
+
+    # Define the checkpoint callback
+    checkpoint_callback = ModelCheckpoint(
+        filepath=os.path.join('data', 'checkpoints', 'model_epoch_{epoch}.h5'),  # Save the model with epoch number in the filename
+        save_freq='epoch',  # Save the model after every epoch
+        save_best_only=False  # Save the model regardless of the monitored metric
+    )
 
     # Compile and fit the model
-    n_epochs = 7
+    n_epochs = 10
     print('Starting Neural Network training...')
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mse)
     history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val), 
-                           batch_size = hp['batch_size']) #, callbacks=[lr_scheduler]
+                           batch_size = hp['batch_size'], callbacks=[checkpoint_callback])
 
     # Plot the MSE history of the training
     plt.figure()
