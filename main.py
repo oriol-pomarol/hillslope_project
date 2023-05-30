@@ -22,10 +22,10 @@ print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
 remove_outliers = False     # False, True
-model_training = 'nn'      # False, 'rf', 'nn' or 'all'.
-model_evaluation = 'all'    # False, 'train', 'test', 'all'
-plots = ['surface', 'colormesh']                # ['surface', 'colormesh', 'tipping']
-system_ev = [0,'val_data_sin','val_data_lin']   # [0,1,2,'val_data_sin','val_data_lin']
+model_training = 'nn'       # False, 'rf', 'nn' or 'all'.
+model_evaluation = False    # False, 'train', 'test', 'all'
+plots = []                  # ['surface', 'colormesh', 'tipping']
+system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
                        '\nremove_outliers = {}'.format(remove_outliers),
