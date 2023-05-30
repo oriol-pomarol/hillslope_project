@@ -13,8 +13,8 @@ import joblib as jb
 def train_models(X_train, X_val, y_train, y_val, mode='all'):
 
   # Define some internal parameters
-  n_bins = 3
-  n_epochs = 3
+  n_bins = 6
+  n_epochs = 20
 
   if (mode=='rf' or mode=='all'):
     # Start the random forest model training
@@ -73,30 +73,44 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
       val_metrics = []
 
       for i in range(n_bins):
-        # Filter data based on current bin for each feature
-        bin_masks_train = []
-        bin_masks_val = []
-        for j in range(3):
-          bin_mask_train = np.logical_and(X_train[:,j] >= bin_edges[j][i], X_train[:,j] < bin_edges[j][i + 1])
-          bin_mask_val = np.logical_and(X_val[:,j] >= bin_edges[j][i], X_val < bin_edges[j][i + 1])
-          bin_masks_train.append(bin_mask_train)
-          bin_masks_val.append(bin_mask_val)
+        for j in range(n_bins):
+          for k in range(n_bins):
+            # Filter data based on current bin for each feature
+            bin_masks_train = []
+            bin_masks_val = []
+            bin_mask_train = np.logical_and.reduce([X_train[:,0] >= bin_edges[0][i], 
+                                                    X_train[:,0] < bin_edges[0][i + 1],
+                                                    X_train[:,1] >= bin_edges[1][j],
+                                                    X_train[:,1] < bin_edges[1][j + 1],
+                                                    X_train[:,2] >= bin_edges[2][k],
+                                                    X_train[:,2] < bin_edges[2][k + 1]])
+            bin_mask_val = np.logical_and.reduce([X_val[:,0] >= bin_edges[0][i],
+                                                  X_val[:,0] < bin_edges[0][i + 1],
+                                                  X_val[:,1] >= bin_edges[1][j],
+                                                  X_val[:,1] < bin_edges[1][j + 1],
+                                                  X_val[:,2] >= bin_edges[2][k],
+                                                  X_val[:,2] < bin_edges[2][k + 1]])
+            bin_masks_train.append(bin_mask_train)
+            bin_masks_val.append(bin_mask_val)
 
-        # Apply the filters to train and validation data
-        bin_mask_train = np.logical_and.reduce(bin_masks_train)
-        bin_mask_val = np.logical_and.reduce(bin_masks_val)
+            # Apply the filters to train and validation data
+            bin_mask_train = np.logical_and.reduce(bin_masks_train)
+            bin_mask_val = np.logical_and.reduce(bin_masks_val)
 
-        X_train_bin = X_train[bin_mask_train]
-        y_train_bin = y_train[bin_mask_train]
-        X_val_bin = X_val[bin_mask_val]
-        y_val_bin = y_val[bin_mask_val]
+            X_train_bin = X_train[bin_mask_train]
+            y_train_bin = y_train[bin_mask_train]
+            X_val_bin = X_val[bin_mask_val]
+            y_val_bin = y_val[bin_mask_val]
 
-        # Evaluate the model on the current bin
-        train_metrics_bin = nnetwork.evaluate(X_train_bin, y_train_bin, verbose=0)
-        val_metrics_bin = nnetwork.evaluate(X_val_bin, y_val_bin, verbose=0)
+            # Evaluate the model on the current bin
+            if X_train_bin.shape[0] != 0:
+              train_metrics_bin = nnetwork.evaluate(X_train_bin, y_train_bin, verbose=0)
+              val_metrics_bin = nnetwork.evaluate(X_val_bin, y_val_bin, verbose=0)
+            else:
+              train_metrics_bin, val_metrics_bin = -1, -1
 
-        train_metrics.append(train_metrics_bin)
-        val_metrics.append(val_metrics_bin)
+            train_metrics.append(train_metrics_bin)
+            val_metrics.append(val_metrics_bin)
 
       # Append metrics for the current epoch
       train_metrics_per_bin.append(train_metrics)
@@ -106,23 +120,21 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     train_metrics_per_bin = np.array(train_metrics_per_bin)
     val_metrics_per_bin = np.array(val_metrics_per_bin)
 
-    # Create a grid of subplots for the train-validation plots
-    fig, axs = plt.subplots(n_bins, n_bins, figsize=(12, 12))   #, sharex=True, sharey=True
-
     # Plot the train-validation metrics for each bin and epoch
-    for g_plot in bin_edges[2]:
-      for i in range(n_bins):
-        for i in range(n_bins):
-          train_metrics_bin = train_metrics_per_bin[:, i * n_bins + j]
-          val_metrics_bin = val_metrics_per_bin[:, i * n_bins + j]
+    for k, g_plot in enumerate(bin_edges[2][:-1]):
+      fig, axs = plt.subplots(n_bins, n_bins, figsize=(12, 12))   #, sharex=True, sharey=True
+      for i, B_plot in enumerate(bin_edges[0][:-1]):
+        for j, D_plot in enumerate(bin_edges[1][:-1]):
+          train_metrics_bin = train_metrics_per_bin[:, i * n_bins**2 + j*n_bins + k]
+          val_metrics_bin = val_metrics_per_bin[:, i * n_bins**2 + j*n_bins + k]
 
           # Plot train-validation metrics
-          axs[i, j].plot(train_metrics_bin, label='Train')
-          axs[i, j].plot(val_metrics_bin, label='Validation')
-          axs[i, j].set_title(f'Bin {i+1}, {j+1}')
-          axs[i, j].set_xlabel('Epoch')
-          axs[i, j].set_ylabel('Metric')
-          axs[i, j].legend()
+          axs[n_bins-i-1, j].plot(train_metrics_bin, label='Train')
+          axs[n_bins-i-1, j].plot(val_metrics_bin, label='Validation')
+          axs[n_bins-i-1, j].set_title(f'B = {B_plot:.1f}, D = {D_plot:.2f}')
+          axs[n_bins-i-1, j].set_xlabel('Epoch')
+          axs[n_bins-i-1, j].set_ylabel('Metric')
+          axs[n_bins-i-1, j].legend()
 
       plt.tight_layout()
       plt.savefig(f'temp/training_history_g_{g_plot}.png')
