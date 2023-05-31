@@ -102,12 +102,12 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
             X_val_bin = X_val[bin_mask_val]
             y_val_bin = y_val[bin_mask_val]
 
-            # Evaluate the model on the current bin
+            # Evaluate the model on the current bin and save the results
+            train_metrics_bin, val_metrics_bin = -1, -1 #set a default value of -1
             if X_train_bin.shape[0] != 0:
               train_metrics_bin = nnetwork.evaluate(X_train_bin, y_train_bin, verbose=0)
-              val_metrics_bin = nnetwork.evaluate(X_val_bin, y_val_bin, verbose=0)
-            else:
-              train_metrics_bin, val_metrics_bin = -1, -1
+            if X_val_bin.shape[0] != 0:
+              val_metrics_bin = nnetwork.evaluate(X_val_bin, y_val_bin, verbose=0)            
 
             train_metrics.append(train_metrics_bin)
             val_metrics.append(val_metrics_bin)
