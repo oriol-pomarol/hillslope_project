@@ -41,7 +41,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
 #         hp = pickle.load(f)
 #     print('Successfully loaded and formatted data.')
 
-    hp = {'units':[27,216,8], 'act_fun':'relu', 'learning_rate':1E-4, 'batch_size':64}
+    hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu', 'learning_rate':1E-4, 'batch_size':64}
 
     # Define the model
     nnetwork = keras.Sequential()
