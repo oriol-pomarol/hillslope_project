@@ -45,25 +45,37 @@ def surface_plots(model, rforest):
   B_lim = 3
   D_lim = 0.5
   g_plot = 1.76 #1.76
+  D_average = 'uniform'
+  n_samples = 100
 
   # Make a grid of B and D values
   D_edges = np.linspace(0, D_lim, n_sq)
   B_edges = np.linspace(0, B_lim, n_sq)
   D_grid, B_grid = np.meshgrid(D_edges, B_edges)
 
-  # Format the data to feed to the model
-  g_grid =  np.ones((n_sq**2)) * g_plot
-  X_grid = np.column_stack((B_grid.flatten(), D_grid.flatten(), g_grid))
+  # Define how is g sampled for D average estimation
+  if D_average == 'uniform':
+    g_sample = np.linspace(0, 1, n_samples)
+
+  # Generate the grazing pressure array
+  g_grid_B =  np.ones((n_sq**2)) * g_plot
+  g_grid_D = np.tile(g_sample, n_sq**2)
+  g_grid = np.concatenate((g_grid_B,g_grid_D))
+
+  # Format the data to feed it to the ML models
+  X_grid = np.column_stack((np.tile(B_grid.flatten(), n_samples+1),
+                            np.tile(D_grid.flatten(), n_samples+1), g_grid))
 
   # Use RF and NN to predict the value of the derivatives in the grid points
   Z_rf = rforest.predict(X_grid)
   Z_nn = model.predict(X_grid)
 
-  dB_dt_nn = Z_nn[:,0].reshape((n_sq,n_sq))
-  dD_dt_nn = Z_nn[:,1].reshape((n_sq,n_sq))
+  # Format the output to obtain the derivatives for each variable and model
+  dB_dt_rf = Z_rf[:n_sq**2,0].reshape((n_sq,n_sq))
+  dD_dt_rf = np.mean(Z_rf[n_sq**2:,1].reshape((n_samples,n_sq,n_sq)), axis = 0)
 
-  dB_dt_rf = Z_rf[:,0].reshape((n_sq,n_sq))
-  dD_dt_rf = Z_rf[:,1].reshape((n_sq,n_sq))
+  dB_dt_nn = Z_nn[:n_sq**2,0].reshape((n_sq,n_sq))
+  dD_dt_nn = np.mean(Z_nn[n_sq**2:,1].reshape((n_samples,n_sq,n_sq)), axis = 0)
 
   # Plot the surface for dB/dt and dD/dt for both models
   for name, dB_dt, dD_dt in [['rf', dB_dt_rf, dD_dt_rf], ['nn', dB_dt_nn, dD_dt_nn]]:
