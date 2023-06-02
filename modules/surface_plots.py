@@ -40,11 +40,12 @@ def surface_plots(model, rforest):
     return solid_lines, dashed_lines
 
   #Set the parameters
-  scale_surface = 10
+  scale_surface = 3
   n_sq = 18 * scale_surface
   B_lim = 3
-  D_lim = 0.5
-  g_plot = 1.76 #1.76
+  D_lim = 0.6
+  g_lim = 3
+  g_plot = 1.9 #1.76
   D_average = 'uniform'
   n_samples = 100
 
@@ -55,7 +56,7 @@ def surface_plots(model, rforest):
 
   # Define how is g sampled for D average estimation
   if D_average == 'uniform':
-    g_sample = np.linspace(0, 1, n_samples)
+    g_sample = np.linspace(0, g_lim, n_samples)
 
   # Generate the grazing pressure array
   g_grid_B =  np.ones((n_sq**2)) * g_plot
