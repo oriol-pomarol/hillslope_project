@@ -104,9 +104,9 @@ y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
 del B,D,g,dB_dt,dD_dt
 
 # Remove the boundary values
-boundary_1 = X[:, 0] == 0
+boundary_1 = X[:, 0] == 0.01
 boundary_2 = X[:, 0] == c
-boundary_3 = X[:, 1] == 0
+boundary_3 = X[:, 1] == 0.01
 boundary_4 = X[:, 1] == alpha
 
 boundary_values = boundary_1 & boundary_2 & boundary_3 & boundary_4
