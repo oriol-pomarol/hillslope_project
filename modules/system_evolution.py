@@ -37,7 +37,6 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   # Compute the number of steps, t sequence, and when to show the percentages
   n_years = min(n_years, dt*len(B_det))
   n_steps = int(n_years/dt)
-  t = np.linspace(0, n_years, n_steps)
   perc_steps = n_steps//20
 
   # Initialize B and D
@@ -57,10 +56,23 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
     for_slopes = rforest.predict(np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]]))
 
     #compute the new values, forced to be within the physically possible results
-    B_for[step] = np.clip(B_for[step-1] + for_slopes.squeeze()[0]*dt, 0.01, c)
-    D_for[step] = np.clip(D_for[step-1] + for_slopes.squeeze()[1]*dt, 0.01, alpha)
-    B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0.01, c)
-    D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0.01, alpha)
+    B_for[step] = np.clip(B_for[step-1] + for_slopes.squeeze()[0]*dt, 0.0, c)
+    D_for[step] = np.clip(D_for[step-1] + for_slopes.squeeze()[1]*dt, 0.0, alpha)
+    B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0.0, c)
+    D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0.0, alpha)
+    # Stop the evolution if it reaches 0
+    if B_for[step]==0 and D_for[step]==0 and B_nn[step]==0 and D_nn[step]==0:
+      n_steps = step+1
+      B_for = B_for[:step]
+      D_for = D_for[:step]
+      B_nn = B_nn[:step]
+      D_nn = D_nn[:step]
+      print('Early stopping: Zero value reached for all variables.')
+      
+  # Redefine the number of years and create the time vector
+  n_years = dt*n_steps
+  t = np.linspace(0, n_years, n_steps)
+
 
   # Plot D(t), B(t) and g(t)
   fig, axs = plt.subplots(3, 1, figsize = (10,7.5))

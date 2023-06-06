@@ -80,8 +80,8 @@ for step in range(1,n_steps):
   dB_dt_steps[step-1], dD_dt_steps[step-1] = steps_slopes
 
   #compute the new values, forced to be within the physically possible results
-  B_steps[step] = np.clip(B_steps[step-1] + steps_slopes[0]*dt, 0.01, c)
-  D_steps[step] = np.clip(D_steps[step-1] + steps_slopes[1]*dt, 0.01, alpha)
+  B_steps[step] = np.clip(B_steps[step-1] + steps_slopes[0]*dt, 0.0, c)
+  D_steps[step] = np.clip(D_steps[step-1] + steps_slopes[1]*dt, 0.0, alpha)
 
 dB_dt_steps[-1], dD_dt_steps[-1] = dX_dt(B_steps[-1], D_steps[-1], g[-1])
 
@@ -104,15 +104,15 @@ y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
 del B,D,g,dB_dt,dD_dt
 
 # Remove the boundary values
-boundary_1 = X[:, 0] == 0.01
+boundary_1 = X[:, 0] == 0.0
 boundary_2 = X[:, 0] == c
-boundary_3 = X[:, 1] == 0.01
+boundary_3 = X[:, 1] == 0.0
 boundary_4 = X[:, 1] == alpha
 
 boundary_values = boundary_1 | boundary_2 | boundary_3 | boundary_4
-print(np.sum(boundary_1), np.sum(boundary_2), np.sum(boundary_3), np.sum(boundary_4))
 print(f"{np.sum(boundary_values)} boundary values removed.")
 X = X[~boundary_values]
+y = y[~boundary_values]
 
 n_samples = X.shape[0]
 print(f"{n_samples} final samples.")
