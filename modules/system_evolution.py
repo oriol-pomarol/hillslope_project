@@ -65,7 +65,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
     nn_slopes = nn_predictions[0,0], np.mean(nn_predictions[1:,1])
     for_dB_pred_input = np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]])
     for_dD_pred_input = np.array([[B_for[step-1], D_for[step-1], g_sampled] for g_sampled in np.linspace(0, 3, 100)])
-    for_predictions = rforest.predict(np.concatenate((for_dB_pred_input,for_dD_pred_input)), verbose = False).squeeze()
+    for_predictions = rforest.predict(np.concatenate((for_dB_pred_input,for_dD_pred_input))).squeeze()
     for_slopes = for_predictions[0,0], np.mean(for_predictions[1:,1])
 
     #compute the new values, forced to be within the physically possible results
