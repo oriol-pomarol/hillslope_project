@@ -22,10 +22,10 @@ print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
 remove_outliers = False     # False, True
-model_training = False      # False, 'rf', 'nn' or 'all'.
-model_evaluation = False    # False, 'train', 'test', 'all'
-plots = ['surface']         # ['surface', 'colormesh', 'tipping']
-system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
+model_training = 'all'      # False, 'rf', 'nn' or 'all'.
+model_evaluation = 'all'    # False, 'train', 'test', 'all'
+plots = ['surface', 'colormesh']         # ['surface', 'colormesh', 'tipping']
+system_ev = [0,1,'val_data_lin']              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
                        '\nremove_outliers = {}'.format(remove_outliers),
@@ -109,7 +109,8 @@ boundary_2 = X[:, 0] == c
 boundary_3 = X[:, 1] == 0.01
 boundary_4 = X[:, 1] == alpha
 
-boundary_values = boundary_1 & boundary_2 & boundary_3 & boundary_4
+boundary_values = boundary_1 | boundary_2 | boundary_3 | boundary_4
+print(np.sum(boundary_1), np.sum(boundary_2), np.sum(boundary_3), np.sum(boundary_4))
 print(f"{np.sum(boundary_values)} boundary values removed.")
 X = X[~boundary_values]
 
