@@ -48,14 +48,6 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     for n_units in hp['units']:
       nnetwork.add(tf.keras.layers.Dense(units=n_units, activation=hp['act_fun']))
     nnetwork.add(keras.layers.Dense(2, activation='linear'))
-    
-#    # Define a LR scheduler
-#    def predefined_lr(epoch):
-#      lr_schedule = [1E-3,1E-2,1E-1,1E-2,1E-3,1E-4,1E-5]
-#      lr = lr_schedule[epoch]
-#      return lr
-#
-#    lr_scheduler = LearningRateScheduler(predefined_lr)
 
     # Compile and fit the model
     n_epochs = 7

@@ -38,10 +38,58 @@ run_summary = "".join(['***MODULES***',
 start_time = time.time()
 
 # Load the data
-data_file = 'data.pkl'
+data_file = 'gd_data.pkl'
 print('Loading and formatting data...')
 with open(os.path.join('data', data_file), 'rb') as f:
-    B,D,g,dB_dt,dD_dt = pickle.load(f)
+    B,D,g,_,_ = pickle.load(f)
+
+# Define some run parameters
+Bo = B[0]   # initial value of B
+Do = D[0]   # initial value of D
+dt = 0.5        # time step, 7/365 in paper, 0.1 for stability in results
+n_steps = len(B)
+n_years = dt*n_steps   # maximum number of years to run, 20000 in paper
+
+# Define the physical parameters
+r, c, i, d, s = 2.1, 2.9, -0.7, 0.04, 0.4 
+Wo, a, Et, Eo, k, b, C = 5e-4, 4.02359478109, 0.021, 0.084, 0.05, 0.28, 1e-4
+alpha = np.log(Wo/C)/a
+
+# Define the function that computes dB/dt and dD/dt
+def dX_dt(B,D,g):
+  dB_dt_step = (1-(1-i)*np.exp(-1*D/d))*(r*B*(1-B/c))-g*B/(s+B)
+  dD_dt_step = Wo*np.exp(-1*a*D)-np.exp(-1*B/b)*(Et+np.exp(-1*D/k)*(Eo-Et))-C
+  return dB_dt_step*(B!=0), dD_dt_step*(D!=0)
+
+# Generate the time sequence
+t = np.linspace(0, n_years, n_steps)
+
+# Initialize B and D
+B_steps = np.ones_like(B) * Bo
+D_steps = np.ones_like(D) * Do
+
+# Initialize dB/dt and dD/dt
+dB_dt_steps = np.ones_like(B)
+dD_dt_steps = np.ones_like(D)
+
+# Allow the system to evolve
+for step in range(1,n_steps):
+    
+  # Compute the derivatives
+  steps_slopes = dX_dt(B_steps[step-1], D_steps[step-1], g[step-1])
+  dB_dt_steps[step-1], dD_dt_steps[step-1] = steps_slopes
+
+  #compute the new values, forced to be within the physically possible results
+  B_steps[step] = np.clip(B_steps[step-1] + steps_slopes[0]*dt, 0.01, c)
+  D_steps[step] = np.clip(D_steps[step-1] + steps_slopes[1]*dt, 0.01, alpha)
+
+dB_dt_steps[-1], dD_dt_steps[-1] = dX_dt(B_steps[-1], D_steps[-1], g[-1])
+
+# Save the results as the new training data
+B = B_steps
+D = D_steps
+dB_dt = dB_dt_steps
+dD_dt = dD_dt_steps
 
 # Save the necessary data for the system evolution
 X_ev = system_ev
@@ -49,12 +97,24 @@ for i, element in enumerate(X_ev):
   if isinstance(element, int):
     X_ev[i] = [B[:,element], D[:,element], g[:,element]]
 
+
 # Define input and output variables and delete unnecessary data
 X = np.column_stack((B.flatten('F'),D.flatten('F'),g.flatten('F')))
 y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
 del B,D,g,dB_dt,dD_dt
 
+# Remove the boundary values
+boundary_1 = X[:, 0] == 0
+boundary_2 = X[:, 0] == c
+boundary_3 = X[:, 1] == 0
+boundary_4 = X[:, 1] == alpha
+
+boundary_values = boundary_1 & boundary_2 & boundary_3 & boundary_4
+print(f"{np.sum(boundary_values)} boundary values removed.")
+X = X[~boundary_values]
+
 n_samples = X.shape[0]
+print(f"{n_samples} final samples.")
 
 # Split between training and test data and delete unnecessary data
 test_size = 0.3

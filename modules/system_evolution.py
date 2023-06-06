@@ -41,9 +41,6 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   perc_steps = n_steps//20
 
   # Initialize B and D
-  B_steps = np.ones((n_steps)) * Bo
-  D_steps = np.ones((n_steps)) * Do
-
   B_for = np.ones((n_steps)) * Bo
   D_for = np.ones((n_steps)) * Do
 
@@ -56,17 +53,14 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
       print('Sim {}: {:.0f}% of steps completed.'.format(iter_count, 100*step/n_steps))
       
     # Compute the derivatives
-    steps_slopes = dX_dt(B_steps[step-1], D_steps[step-1], g_ev[step-1])
     nn_slopes = nnetwork.predict(np.array([[B_nn[step-1], D_nn[step-1], g_ev[step-1]]]), verbose = False)
     for_slopes = rforest.predict(np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]]))
 
     #compute the new values, forced to be within the physically possible results
-    B_steps[step] = np.clip(B_steps[step-1] + steps_slopes[0]*dt, 0, c)
-    D_steps[step] = np.clip(D_steps[step-1] + steps_slopes[1]*dt, 0, alpha)
-    B_for[step] = np.clip(B_for[step-1] + for_slopes.squeeze()[0]*dt, 0, 7)
-    D_for[step] = np.clip(D_for[step-1] + for_slopes.squeeze()[1]*dt, 0, 3)
-    B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0, 7)
-    D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0, 3)
+    B_for[step] = np.clip(B_for[step-1] + for_slopes.squeeze()[0]*dt, 0.01, c)
+    D_for[step] = np.clip(D_for[step-1] + for_slopes.squeeze()[1]*dt, 0.01, alpha)
+    B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0.01, c)
+    D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0.01, alpha)
 
   # Plot D(t), B(t) and g(t)
   fig, axs = plt.subplots(3, 1, figsize = (10,7.5))
@@ -77,7 +71,6 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
     axs[0].fill_between(t, (D_det-D_std)[:n_steps], (D_det+D_std)[:n_steps], 
                     color='lightskyblue', alpha = 0.3, linewidth=0)
 
-  axs[0].plot(t, D_steps, '--c', label = 'Minimal model')
   axs[0].plot(t, D_det[:n_steps], '-b', label = 'Detailed model')
   axs[0].plot(t, D_nn, '-r', label = 'Neural network')
   axs[0].plot(t, D_for, '-g', label = 'Random forests')
@@ -87,7 +80,6 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   axs[0].tick_params(axis="both", which="both", direction="in", 
                          top=True, right=True)
 
-  axs[1].plot(t, B_steps, '--c')
   axs[1].plot(t, B_det[:n_steps], '-b')
   axs[1].plot(t, B_nn, '-r')
   axs[1].plot(t, B_for, '-g')
@@ -114,7 +106,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   print(f'Sim {iter_count}: Successfully completed system evolution.')
 
   # Save the results
-  saved_vars = [B_det[:n_steps], B_steps, B_for, B_nn, D_det[:n_steps], D_steps, D_for, D_nn, g_ev[:n_steps], t]
+  saved_vars = [B_det[:n_steps], B_for, B_nn, D_det[:n_steps], D_for, D_nn, g_ev[:n_steps], t]
   header_vars = 'B_det,B_steps,B_for,B_nn,D_det,D_steps,D_for,D_nn,g,t'
 
   if isinstance(X_ev, str):
