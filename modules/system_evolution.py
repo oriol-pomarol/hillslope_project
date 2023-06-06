@@ -57,12 +57,16 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
       
     # Compute the derivatives
     steps_slopes = dX_dt(B_steps[step-1], D_steps[step-1], g_ev[step-1])
-    dB_pred_input = np.array([[B_nn[step-1], D_nn[step-1], g_ev[step-1]]])
+    
     #Implemented uniform g sampling for dD/dt estimation
-    dD_pred_input = np.array([[B_nn[step-1], D_nn[step-1], g_sampled] for g_sampled in np.linspace(0, 3, 100)])
-    nn_predictions = nnetwork.predict(np.concatenate((dB_pred_input,dD_pred_input)), verbose = False).squeeze()
+    nn_dB_pred_input = np.array([[B_nn[step-1], D_nn[step-1], g_ev[step-1]]])
+    nn_dD_pred_input = np.array([[B_nn[step-1], D_nn[step-1], g_sampled] for g_sampled in np.linspace(0, 3, 100)])
+    nn_predictions = nnetwork.predict(np.concatenate((nn_dB_pred_input,nn_dD_pred_input)), verbose = False).squeeze()
     nn_slopes = nn_predictions[0,0], np.mean(nn_predictions[1:,1])
-    for_slopes = rforest.predict(np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]])).squeeze()
+    for_dB_pred_input = np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]])
+    for_dD_pred_input = np.array([[B_for[step-1], D_for[step-1], g_sampled] for g_sampled in np.linspace(0, 3, 100)])
+    for_predictions = rforest.predict(np.concatenate((for_dB_pred_input,for_dD_pred_input)), verbose = False).squeeze()
+    for_slopes = for_predictions[0,0], np.mean(for_predictions[1:,1])
 
     #compute the new values, forced to be within the physically possible results
     B_steps[step] = np.clip(B_steps[step-1] + steps_slopes[0]*dt, 0, c)
