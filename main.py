@@ -112,14 +112,14 @@ n_samples = X.shape[0]
 print(f"{n_samples} final samples.")
 
 # Split between training and test data and delete unnecessary data
-test_size = 0.3
+test_size = 0.1
 X_train, X_test, y_train, y_test = train_test_split(X, y,
                                                     test_size=test_size,
                                                     shuffle=False)
 del X, y
 
 # Split between training and validation data
-val_size = 0.2
+val_size = 0.1
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, 
                                                   test_size=val_size/(1-test_size),
                                                   shuffle=True, random_state=123)
