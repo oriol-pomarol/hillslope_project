@@ -23,7 +23,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   def dX_dt(B,D,g):
     dB_dt_step = (1-(1-i)*np.exp(-1*D/d))*(r*B*(1-B/c))-g*B/(s+B)
     dD_dt_step = Wo*np.exp(-1*a*D)-np.exp(-1*B/b)*(Et+np.exp(-1*D/k)*(Eo-Et))-C
-    return dB_dt_step*(B!=0), dD_dt_step*(D!=0)
+    return dB_dt_step, dD_dt_step
 
   # Define some run parameters
   print(f'Sim {iter_count}: Starting system evolution...')

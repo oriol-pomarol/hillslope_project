@@ -21,14 +21,12 @@ from modules.tipping_evolution import tipping_evolution
 print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
-remove_outliers = False     # False, True
 model_training = 'all'      # False, 'rf', 'nn' or 'all'.
 model_evaluation = 'all'    # False, 'train', 'test', 'all'
 plots = ['surface', 'colormesh']         # ['surface', 'colormesh', 'tipping']
 system_ev = [0,1,'val_data_lin']              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
-                       '\nremove_outliers = {}'.format(remove_outliers),
                        '\nmodel_training = {}'.format(model_training),
                        '\nmodel_evaluation = {}'.format(model_evaluation),
                        '\nsystem_ev = {}'.format(system_ev),
@@ -59,7 +57,7 @@ alpha = np.log(Wo/C)/a
 def dX_dt(B,D,g):
   dB_dt_step = (1-(1-i)*np.exp(-1*D/d))*(r*B*(1-B/c))-g*B/(s+B)
   dD_dt_step = Wo*np.exp(-1*a*D)-np.exp(-1*B/b)*(Et+np.exp(-1*D/k)*(Eo-Et))-C
-  return dB_dt_step*(B!=0), dD_dt_step*(D!=0)
+  return dB_dt_step, dD_dt_step
 
 # Generate the time sequence
 t = np.linspace(0, n_years, n_steps)
@@ -79,9 +77,9 @@ for step in range(1,n_steps):
   steps_slopes = dX_dt(B_steps[step-1], D_steps[step-1], g[step-1])
   dB_dt_steps[step-1], dD_dt_steps[step-1] = steps_slopes
 
-  #compute the new values, forced to be within the physically possible results
-  B_steps[step] = np.clip(B_steps[step-1] + steps_slopes[0]*dt, 0.0, c)
-  D_steps[step] = np.clip(D_steps[step-1] + steps_slopes[1]*dt, 0.0, alpha)
+  #compute the new values, forced to be above 0
+  B_steps[step] = np.maximum(B_steps[step-1] + steps_slopes[0]*dt, 0.0)
+  D_steps[step] = np.maximum(D_steps[step-1] + steps_slopes[1]*dt, 0.0)
 
 dB_dt_steps[-1], dD_dt_steps[-1] = dX_dt(B_steps[-1], D_steps[-1], g[-1])
 
@@ -103,16 +101,12 @@ X = np.column_stack((B.flatten('F'),D.flatten('F'),g.flatten('F')))
 y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
 del B,D,g,dB_dt,dD_dt
 
-# Remove the boundary values
-boundary_1 = X[:, 0] == 0.0
-boundary_2 = X[:, 0] == c
-boundary_3 = X[:, 1] == 0.0
-boundary_4 = X[:, 1] == alpha
+# Remove the zero values
+zero_values = (X[:, 0] == 0.0) & (X[:, 1] == 0.0)
 
-boundary_values = boundary_1 | boundary_2 | boundary_3 | boundary_4
-print(f"{np.sum(boundary_values)} boundary values removed.")
-X = X[~boundary_values]
-y = y[~boundary_values]
+print(f"{np.sum(zero_values)} boundary values removed.")
+X = X[~zero_values]
+y = y[~zero_values]
 
 n_samples = X.shape[0]
 print(f"{n_samples} final samples.")
@@ -132,31 +126,9 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train,
 # Add the data characteristics to the summary
 run_summary += "".join(['\n\n***DATA***',
                         '\nn_samples = {}'.format(n_samples),
+                        '\nrmv_samples = {}'.format(np.sum(zero_values)),
                         '\ntest_size = {}'.format(test_size),
                         '\nval_size = {}'.format(val_size)])
-# Remove outliers if requested
-if remove_outliers:
-
-  # Find the outliers
-  q1, q3 = np.percentile(y_train, [25, 75])
-  lower_bound = q1 - (2000 * (q3 - q1))
-  upper_bound = q3 + (2000 * (q3 - q1))
-  outliers = np.any((y_train < lower_bound) | (y_train > upper_bound), axis=1)
-
-  # Plot the data highliting the removed outliers
-  fig, ax = plt.subplots(figsize=(15,9))
-  ax.plot(y_train[~outliers][:,0], y_train[~outliers][:,1], '.k')
-  ax.plot(y_train[outliers][:,0], y_train[outliers][:,1], '.r')
-  ax.set_xlabel('Biomass rate of change')
-  ax.set_ylabel('Soil Depth rate of change')
-  plt.savefig(os.path.join('temp', 'outlier_detection.png'))
-
-  # Remove the outliers from the dataset
-  X_train, y_train = X_train[~outliers], y_train[~outliers]
-
-  # Add to the summary and print the number of removed outliers 
-  run_summary += '\noutliers_removed = {}'.format(np.sum(outliers))
-  print(f'\n\n***\n{np.sum(outliers)} outliers removed.\n***\n\n')
                         
 print('Successfully loaded and formatted data...')
 
