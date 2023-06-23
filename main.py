@@ -47,6 +47,7 @@ Do = D[0]   # initial value of D
 dt = 0.5        # time step, 7/365 in paper, 0.1 for stability in results
 n_steps = len(B)
 n_years = dt*n_steps   # maximum number of years to run, 20000 in paper
+prob_new_B = 0.05 # probability of setting a new random B value 
 
 # Define the physical parameters
 r, c, i, d, s = 2.1, 2.9, -0.7, 0.04, 0.4 
@@ -72,14 +73,18 @@ dD_dt_steps = np.ones_like(D)
 
 # Allow the system to evolve
 for step in range(1,n_steps):
-    
+
   # Compute the derivatives
   steps_slopes = dX_dt(B_steps[step-1], D_steps[step-1], g[step-1])
   dB_dt_steps[step-1], dD_dt_steps[step-1] = steps_slopes
 
-  #compute the new values, forced to be above 0
+  # Compute the new values, forced to be above 0
   B_steps[step] = np.maximum(B_steps[step-1] + steps_slopes[0]*dt, 0.0)
   D_steps[step] = np.maximum(D_steps[step-1] + steps_slopes[1]*dt, 0.0)
+  
+  # Add a random chance to set a new random B value
+  if np.random.choice([True, False], p=[prob_new_B, 1 - prob_new_B]):
+     B_steps[step] = np.random.uniform(0, 3)
 
 dB_dt_steps[-1], dD_dt_steps[-1] = dX_dt(B_steps[-1], D_steps[-1], g[-1])
 
@@ -128,7 +133,8 @@ run_summary += "".join(['\n\n***DATA***',
                         '\nn_samples = {}'.format(n_samples),
                         '\nrmv_samples = {}'.format(np.sum(zero_values)),
                         '\ntest_size = {}'.format(test_size),
-                        '\nval_size = {}'.format(val_size)])
+                        '\nval_size = {}'.format(val_size)],
+                        '\nprob_new_B = {}'.format(prob_new_B))
                         
 print('Successfully loaded and formatted data...')
 
