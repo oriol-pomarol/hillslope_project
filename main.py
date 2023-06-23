@@ -22,10 +22,10 @@ print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
 remove_outliers = False     # False, True
-model_training = False      # False, 'rf', 'nn' or 'all'.
-model_evaluation = False    # False, 'train', 'test', 'all'
+model_training = 'all'      # False, 'rf', 'nn' or 'all'.
+model_evaluation = 'all'    # False, 'train', 'test', 'all'
 plots = ['surface']         # ['surface', 'colormesh', 'tipping']
-system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
+system_ev = [0,1,'val_data_lin']              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
                        '\nremove_outliers = {}'.format(remove_outliers),
@@ -38,7 +38,7 @@ run_summary = "".join(['***MODULES***',
 start_time = time.time()
 
 # Load the data
-data_file = 'data.pkl'
+data_file = 'gd_data.pkl'
 print('Loading and formatting data...')
 with open(os.path.join('data', data_file), 'rb') as f:
     B,D,g,dB_dt,dD_dt = pickle.load(f)

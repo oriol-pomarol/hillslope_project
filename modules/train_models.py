@@ -58,7 +58,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
 #    lr_scheduler = LearningRateScheduler(predefined_lr)
 
     # Compile and fit the model
-    n_epochs = 7
+    n_epochs = 50
     print('Starting Neural Network training...')
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mse)
     history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val), 
