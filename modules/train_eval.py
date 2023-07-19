@@ -51,7 +51,7 @@ def train_eval(rforest, nnetwork, X_train, y_train, X_val, y_val):
   fig.patch.set_alpha(1)
   plt.savefig('results/train_predicted_vs_true_rf.png')
 
-  # Evalute RF model on validation and training data
+  # Evalute NN model on validation and training data
   print('Starting NN train set evaluation...')
   y_pred_train_nn = nnetwork.predict(X_train)
   mse_train_nn = mean_squared_error(y_train, y_pred_train_nn)

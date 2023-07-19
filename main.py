@@ -39,13 +39,13 @@ start_time = time.time()
 data_file = 'gd_data.pkl'
 print('Loading and formatting data...')
 with open(os.path.join('data', data_file), 'rb') as f:
-    B,D,g,_,_ = pickle.load(f)
+    B_input,D_input,g,_,_ = pickle.load(f)
 
 # Define some run parameters
-Bo = B[0]   # initial value of B
-Do = D[0]   # initial value of D
+Bo = B_input[0]   # initial value of B
+Do = D_input[0]   # initial value of D
 dt = 0.5        # time step, 7/365 in paper, 0.1 for stability in results
-n_steps = len(B)
+n_steps = len(B_input)
 n_years = dt*n_steps   # maximum number of years to run, 20000 in paper
 prob_new_B = 0.05 # probability of setting a new random B value 
 
@@ -64,16 +64,16 @@ def dX_dt(B,D,g):
 t = np.linspace(0, n_years, n_steps)
 
 # Initialize B and D
-B_steps = np.ones_like(B) * Bo
-D_steps = np.ones_like(D) * Do
+B_steps = np.ones_like(B_input) * Bo
+D_steps = np.ones_like(D_input) * Do
 
 # Initialize dB/dt and dD/dt
-dB_dt_steps = np.ones_like(B)
-dD_dt_steps = np.ones_like(D)
+dB_dt_steps = np.ones_like(B_input)
+dD_dt_steps = np.ones_like(D_input)
 
 # Allow the system to evolve
 for step in range(1,n_steps):
-
+  
   # Compute the derivatives
   steps_slopes = dX_dt(B_steps[step-1], D_steps[step-1], g[step-1])
   dB_dt_steps[step-1], dD_dt_steps[step-1] = steps_slopes
@@ -81,30 +81,46 @@ for step in range(1,n_steps):
   # Compute the new values, forced to be above 0
   B_steps[step] = np.maximum(B_steps[step-1] + steps_slopes[0]*dt, 0.0)
   D_steps[step] = np.maximum(D_steps[step-1] + steps_slopes[1]*dt, 0.0)
-  
+
+  if np.isinf(B_steps[step]).any():
+     idx = np.argmax(np.isinf(B_steps[step]))
+     plt.figure()
+     plt.plot(B_steps[step-20:step-10,idx])
+     plt.savefig('results/check_infb.png')
+     plt.figure()
+     plt.plot(D_steps[step-20:step-10,idx])
+     plt.savefig('results/check_infd.png')
+     plt.figure()
+     plt.plot(g[step-20:step-10,idx])
+     plt.savefig('results/check_infg.png')
+     break
+
   # Add a random chance to set a new random B value
   if np.random.choice([True, False], p=[prob_new_B, 1 - prob_new_B]):
-     B_steps[step] = np.random.uniform(0, 3)
+    B_steps[step] = np.random.uniform(0, 3, size=len(B_steps[step]))
+
+print(np.isnan(B_steps).any())
 
 dB_dt_steps[-1], dD_dt_steps[-1] = dX_dt(B_steps[-1], D_steps[-1], g[-1])
 
+
 # Save the results as the new training data
-B = B_steps
-D = D_steps
+B_input = B_steps
+D_input = D_steps
 dB_dt = dB_dt_steps
 dD_dt = dD_dt_steps
+del B_steps, D_steps, dB_dt_steps, dD_dt_steps
 
 # Save the necessary data for the system evolution
 X_ev = system_ev
 for i, element in enumerate(X_ev):
   if isinstance(element, int):
-    X_ev[i] = [B[:,element], D[:,element], g[:,element]]
-
+    X_ev[i] = [B_input[:,element], D_input[:,element], g[:,element]]
 
 # Define input and output variables and delete unnecessary data
-X = np.column_stack((B.flatten('F'),D.flatten('F'),g.flatten('F')))
+X = np.column_stack((B_input.flatten('F'),D_input.flatten('F'),g.flatten('F')))
 y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
-del B,D,g,dB_dt,dD_dt
+del B_input,D_input,g,dB_dt,dD_dt
 
 # Remove the zero values
 zero_values = (X[:, 0] == 0.0) & (X[:, 1] == 0.0)
@@ -117,7 +133,7 @@ n_samples = X.shape[0]
 print(f"{n_samples} final samples.")
 
 # Split between training and test data and delete unnecessary data
-test_size = 0.1
+test_size = 0.2
 X_train, X_test, y_train, y_test = train_test_split(X, y,
                                                     test_size=test_size,
                                                     shuffle=False)
@@ -133,8 +149,8 @@ run_summary += "".join(['\n\n***DATA***',
                         '\nn_samples = {}'.format(n_samples),
                         '\nrmv_samples = {}'.format(np.sum(zero_values)),
                         '\ntest_size = {}'.format(test_size),
-                        '\nval_size = {}'.format(val_size)],
-                        '\nprob_new_B = {}'.format(prob_new_B))
+                        '\nval_size = {}'.format(val_size),
+                        '\nprob_new_B = {}'.format(prob_new_B)])
                         
 print('Successfully loaded and formatted data...')
 
