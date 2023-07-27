@@ -57,7 +57,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
     # Compute the derivatives
     nn_slopes = nnetwork.predict(np.array([[B_nn[step-1], D_nn[step-1], g_ev[step-1]]]), verbose = False)
     for_slopes = rforest.predict(np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]]))
-    min_slopes = dX_dt(np.array([[B_min[step-1], D_min[step-1], g_ev[step-1]]]))
+    min_slopes = dX_dt(B_min[step-1], D_min[step-1], g_ev[step-1])
 
     #compute the new values, forced to be within the physically possible results
     B_min[step] = np.clip(B_min[step-1] + min_slopes[0]*dt, 0.0, c)
