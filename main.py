@@ -85,8 +85,6 @@ for step in range(1,n_steps):
   if np.random.choice([True, False], p=[prob_new_B, 1 - prob_new_B]):
     B_steps[step] = np.random.uniform(0, c, size=len(B_steps[step]))
 
-print(np.isnan(B_steps).any())
-
 dB_dt_steps[-1], dD_dt_steps[-1] = dX_dt(B_steps[-1], D_steps[-1], g[-1])
 
 
@@ -103,17 +101,17 @@ for i, element in enumerate(X_ev):
   if isinstance(element, int):
     X_ev[i] = [B_input[:,element], D_input[:,element], g[:,element]]
 
-# Define input and output variables and delete unnecessary data
+# Define input and output variables and delete unnecessary variables
 X = np.column_stack((B_input.flatten('F'),D_input.flatten('F'),g.flatten('F')))
 y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
 del B_input,D_input,g,dB_dt,dD_dt
 
-# Remove the zero values
-zero_values = (X[:, 0] == 0.0) & (X[:, 1] == 0.0)
+# # Remove the values where both B and D are zero 
+# zero_values = (X[:, 0] == 0.0) & (X[:, 1] == 0.0)
 
-print(f"{np.sum(zero_values)} boundary values removed.")
-X = X[~zero_values]
-y = y[~zero_values]
+# print(f"{np.sum(zero_values)} boundary values removed.")
+# X = X[~zero_values]
+# y = y[~zero_values]
 
 n_samples = X.shape[0]
 print(f"{n_samples} final samples.")
@@ -133,7 +131,7 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train,
 # Add the data characteristics to the summary
 run_summary += "".join(['\n\n***DATA***',
                         '\nn_samples = {}'.format(n_samples),
-                        '\nrmv_samples = {}'.format(np.sum(zero_values)),
+                        # '\nrmv_samples = {}'.format(np.sum(zero_values)),
                         '\ntest_size = {}'.format(test_size),
                         '\nval_size = {}'.format(val_size),
                         '\nprob_new_B = {}'.format(prob_new_B)])

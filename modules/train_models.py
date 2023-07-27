@@ -17,7 +17,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     rforest = RandomForestRegressor(n_estimators = 100, max_features = 'sqrt', 
       max_samples = 0.4, min_samples_leaf = 2, min_samples_split = 20)
     rforest.fit(X_train, y_train)
-    jb.dump(rforest, 'data/rf_model.joblib') 
+    jb.dump(rforest, os.path.join('data','rf_model.joblib')) 
     print('Successfully completed Random Forest training.')
 
   if (mode=='nn' or mode=='all'):
@@ -77,8 +77,10 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     except AttributeError:
       loss_name = nnetwork.loss.name
 
-  with open(os.path.join('data','train_summary.pkl'), 'rb') as f:
-      rf_summary, nn_summary = pickle.load(f)
+  # If training only one model, load the parameters from the other model
+  if (mode=='rf' or mode=='nn'):
+    with open(os.path.join('data','train_summary.pkl'), 'rb') as f:
+        rf_summary, nn_summary = pickle.load(f)
       
   # Save the training summary
   if (mode=='rf' or mode=='all'):
