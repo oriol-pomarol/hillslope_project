@@ -64,11 +64,11 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     plt.legend()
     plt.xlabel('Epoch')
     plt.ylabel('Custom MSE')
-    plt.savefig('temp/training_history.png')
+    plt.savefig(os.path.join('results','training_history.png'))
 
     df = pd.DataFrame({'loss':history.history['loss'], 'val_loss':history.history['val_loss']})
-    df.to_csv('temp/training_history.csv')
-    nnetwork.save('data/nn_model.h5')
+    df.to_csv(os.path.join('results','training_history.csv'))
+    nnetwork.save(os.path.join('data', 'nn_model.h5'))
     print('Successfully completed Neural Network training.')
 
     # Retrieve the loss name
