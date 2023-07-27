@@ -67,18 +67,18 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
     B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0.0, c)
     D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0.0, alpha)
 
-    # Stop the evolution if it reaches 0
-    if B_for[step]==0 and D_for[step]==0 and B_nn[step]==0 and D_nn[step]==0 \
-      and B_min[step]==0 and D_min[step]==0:
-      n_steps = step
-      B_min = B_min[:step]
-      D_min = D_min[:step]
-      B_for = B_for[:step]
-      D_for = D_for[:step]
-      B_nn = B_nn[:step]
-      D_nn = D_nn[:step]
-      print('Early stopping: Zero value reached for all variables.')
-      break
+    # # Stop the evolution if it reaches 0
+    # if B_for[step]==0 and D_for[step]==0 and B_nn[step]==0 and D_nn[step]==0 \
+    #   and B_min[step]==0 and D_min[step]==0:
+    #   n_steps = step
+    #   B_min = B_min[:step]
+    #   D_min = D_min[:step]
+    #   B_for = B_for[:step]
+    #   D_for = D_for[:step]
+    #   B_nn = B_nn[:step]
+    #   D_nn = D_nn[:step]
+    #   print('Early stopping: Zero value reached for all variables.')
+    #   break
       
   # Redefine the number of years and create the time vector
   n_years = dt*n_steps
