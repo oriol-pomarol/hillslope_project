@@ -78,26 +78,13 @@ for step in range(1,n_steps):
   steps_slopes = dX_dt(B_steps[step-1], D_steps[step-1], g[step-1])
   dB_dt_steps[step-1], dD_dt_steps[step-1] = steps_slopes
 
-  # Compute the new values, forced to be above 0
-  B_steps[step] = np.maximum(B_steps[step-1] + steps_slopes[0]*dt, 0.0)
-  D_steps[step] = np.maximum(D_steps[step-1] + steps_slopes[1]*dt, 0.0)
-
-  if np.isinf(B_steps[step]).any():
-     idx = np.argmax(np.isinf(B_steps[step]))
-     plt.figure()
-     plt.plot(B_steps[step-20:step-10,idx])
-     plt.savefig('results/check_infb.png')
-     plt.figure()
-     plt.plot(D_steps[step-20:step-10,idx])
-     plt.savefig('results/check_infd.png')
-     plt.figure()
-     plt.plot(g[step-20:step-10,idx])
-     plt.savefig('results/check_infg.png')
-     break
+  # Compute the new values, forced to be above 0 and below their theoretical max
+  B_steps[step] = np.clip(B_steps[step-1] + steps_slopes[0]*dt, 0.0, c)
+  D_steps[step] = np.clip(D_steps[step-1] + steps_slopes[1]*dt, 0.0, alpha)
 
   # Add a random chance to set a new random B value
   if np.random.choice([True, False], p=[prob_new_B, 1 - prob_new_B]):
-    B_steps[step] = np.random.uniform(0, 3, size=len(B_steps[step]))
+    B_steps[step] = np.random.uniform(0, c, size=len(B_steps[step]))
 
 print(np.isnan(B_steps).any())
 
