@@ -10,7 +10,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   # Import the validation data
   if isinstance(X_ev, str):
     with open(os.path.join('data', X_ev + '.pkl'), 'rb') as f:
-        B_det, D_det, g_ev, B_std, D_std = pickle.load(f)
+        B_det, D_det, g_ev, _, _ = pickle.load(f)
   else:
     B_det, D_det, g_ev = X_ev
 
@@ -40,6 +40,9 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   perc_steps = n_steps//20
 
   # Initialize B and D
+  B_min = np.ones((n_steps)) * Bo
+  D_min = np.ones((n_steps)) * Do
+
   B_for = np.ones((n_steps)) * Bo
   D_for = np.ones((n_steps)) * Do
 
@@ -54,12 +57,16 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
     # Compute the derivatives
     nn_slopes = nnetwork.predict(np.array([[B_nn[step-1], D_nn[step-1], g_ev[step-1]]]), verbose = False)
     for_slopes = rforest.predict(np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]]))
+    min_slopes = dX_dt(np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]]))
 
     #compute the new values, forced to be within the physically possible results
+    B_min[step] = np.clip(B_min[step-1] + min_slopes[0]*dt, 0.0, c)
+    D_min[step] = np.clip(D_min[step-1] + min_slopes[1]*dt, 0.0, alpha)
     B_for[step] = np.clip(B_for[step-1] + for_slopes.squeeze()[0]*dt, 0.0, c)
     D_for[step] = np.clip(D_for[step-1] + for_slopes.squeeze()[1]*dt, 0.0, alpha)
     B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0.0, c)
     D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0.0, alpha)
+
     # Stop the evolution if it reaches 0
     if B_for[step]==0 and D_for[step]==0 and B_nn[step]==0 and D_nn[step]==0:
       n_steps = step
@@ -78,13 +85,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   # Plot D(t), B(t) and g(t)
   fig, axs = plt.subplots(3, 1, figsize = (10,7.5))
 
-  if isinstance(X_ev, str):
-    axs[1].fill_between(t, (B_det-B_std)[:n_steps], (B_det+B_std)[:n_steps],
-                  color='lightskyblue', alpha = 0.3, linewidth=0)
-    axs[0].fill_between(t, (D_det-D_std)[:n_steps], (D_det+D_std)[:n_steps], 
-                    color='lightskyblue', alpha = 0.3, linewidth=0)
-
-  axs[0].plot(t, D_det[:n_steps], '-b', label = 'Detailed model')
+  axs[0].plot(t, D_min, '-b', label = 'Minimal model')
   axs[0].plot(t, D_nn, '-r', label = 'Neural network')
   axs[0].plot(t, D_for, '-g', label = 'Random forests')
   axs[0].set_ylim(0)
@@ -93,7 +94,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   axs[0].tick_params(axis="both", which="both", direction="in", 
                          top=True, right=True)
 
-  axs[1].plot(t, B_det[:n_steps], '-b')
+  axs[1].plot(t, B_min, '-b')
   axs[1].plot(t, B_nn, '-r')
   axs[1].plot(t, B_for, '-g')
   axs[1].set_ylim(0)
@@ -119,12 +120,10 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   print(f'Sim {iter_count}: Successfully completed system evolution.')
 
   # Save the results
-  saved_vars = [B_det[:n_steps], B_for, B_nn, D_det[:n_steps], D_for, D_nn, g_ev[:n_steps], t]
+  saved_vars = [B_min, B_for, B_nn, D_min, D_for, D_nn, g_ev[:n_steps], t]
   header_vars = 'B_det,B_steps,B_for,B_nn,D_det,D_steps,D_for,D_nn,g,t'
 
   if isinstance(X_ev, str):
-    saved_vars.extend([B_std[:n_steps], D_std[:n_steps]])
-    header_vars += ',B_std,D_std'
     file_path = f'results/system_evolution_{X_ev}.csv'
   else:
     file_path = f'results/system_evolution_train_{iter_count}.csv'
