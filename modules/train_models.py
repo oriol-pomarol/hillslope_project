@@ -21,6 +21,10 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     print('Successfully completed Random Forest training.')
 
   if (mode=='nn' or mode=='all'):
+
+    # Set a random seed for tensorflow
+    tf.random.set_seed(10)
+
     # Set all layers to use float64
     tf.keras.backend.set_floatx('float64')
 
@@ -36,25 +40,20 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
       loss = K.sum(loss, axis=1) 
       return loss
 
-    # Load the hyperparameters of the model
-#     with open('data/hyperparameters.pkl', 'rb') as f:
-#         hp = pickle.load(f)
-#     print('Successfully loaded and formatted data.')
-
     hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu', 'learning_rate':1E-5, 'batch_size':64}
 
     # Define the model
     nnetwork = keras.Sequential()
     for n_units in hp['units']:
       nnetwork.add(tf.keras.layers.Dense(units=n_units, activation=hp['act_fun']))
-    nnetwork.add(keras.layers.Dense(2, activation='linear'))
+    nnetwork.add(keras.layers.Dense(2, activation='linear', kernel_regularizer=keras.regularizers.l1(0.01)))
 
     # Compile and fit the model
     n_epochs = 7
     print('Starting Neural Network training...')
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mse)
     history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val), 
-                           batch_size = hp['batch_size']) #, callbacks=[lr_scheduler]
+                           batch_size = hp['batch_size'])
 
     # Plot the MSE history of the training
     plt.figure()

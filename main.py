@@ -9,6 +9,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 import os
 import joblib as jb
+import matplotlib.pyplot as plt
+import matplotlib.ticker as tck
 from keras.models import load_model
 from modules.train_models import train_models
 from modules.test_eval import test_eval
@@ -46,7 +48,8 @@ Do = D_input[0]   # initial value of D
 dt = 0.5        # time step, 7/365 in paper, 0.1 for stability in results
 n_steps = len(B_input)
 n_years = dt*n_steps   # maximum number of years to run, 20000 in paper
-prob_new_B = 0.05 # probability of setting a new random B value 
+prob_new_B = 0.05 # probability of setting a new random B value
+prob_new_D = 0.005 # probability of setting a new random B value
 
 # Define the physical parameters
 r, c, i, d, s = 2.1, 2.9, -0.7, 0.04, 0.4 
@@ -85,6 +88,10 @@ for step in range(1,n_steps):
   if np.random.choice([True, False], p=[prob_new_B, 1 - prob_new_B]):
     B_steps[step] = np.random.uniform(0, c, size=len(B_steps[step]))
 
+  # Add a random chance to set a new random D value
+  if np.random.choice([True, False], p=[prob_new_D, 1 - prob_new_D]):
+    D_steps[step] = np.random.uniform(0, alpha, size=len(D_steps[step]))
+    
 dB_dt_steps[-1], dD_dt_steps[-1] = dX_dt(B_steps[-1], D_steps[-1], g[-1])
 
 
@@ -94,6 +101,35 @@ D_input = D_steps
 dB_dt = dB_dt_steps
 dD_dt = dD_dt_steps
 del B_steps, D_steps, dB_dt_steps, dD_dt_steps
+
+# Plot D(t), B(t) and g(t) for the first simulation
+fig, axs = plt.subplots(3, 1, figsize = (10,7.5))
+
+axs[0].plot(t, D_input[:,0], '-b', label = 'Minimal model')
+axs[0].set_ylim(0)
+axs[0].set_ylabel('soil thickness')
+axs[0].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
+axs[0].tick_params(axis="both", which="both", direction="in", 
+                        top=True, right=True)
+
+axs[1].plot(t, B_input[:,0], '-b')
+axs[1].set_ylim(0)
+axs[1].set_ylabel('biomass')
+axs[1].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
+axs[1].tick_params(axis="both", which="both", direction="in", 
+                        top=True, right=True)
+
+axs[2].plot(t, g[:,0], '-b')
+axs[2].set_ylim(0)
+axs[2].set_ylabel('grazing pressure')
+axs[2].set_xlabel('time (years)')
+axs[2].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
+axs[2].tick_params(axis="both", which="both", direction="in", 
+                        top=True, right=True)
+
+fig.patch.set_alpha(1)
+plt.setp(axs, xlim=(0, n_years))
+plt.savefig(f'results/train_sim_0.png')
 
 # Save the necessary data for the system evolution
 X_ev = system_ev
