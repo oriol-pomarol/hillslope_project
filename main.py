@@ -73,6 +73,10 @@ D_steps = np.ones_like(D_input) * Do
 dB_dt_steps = np.ones_like(B_input)
 dD_dt_steps = np.ones_like(D_input)
 
+# Create a jumps array to keep track of when they happen
+jumps = np.array([True] * B_input.shape[0])
+jumps[0] = False # Because it will become the last, that is also not useful
+
 # Allow the system to evolve
 for step in range(1,n_steps):
   
@@ -87,32 +91,34 @@ for step in range(1,n_steps):
   # Add a random chance to set a new random B value
   if np.random.choice([True, False], p=[prob_new_B, 1 - prob_new_B]):
     B_steps[step] = np.random.uniform(0, c, size=len(B_steps[step]))
+    jumps[step] = False
 
   # Add a random chance to set a new random D value
   if np.random.choice([True, False], p=[prob_new_D, 1 - prob_new_D]):
     D_steps[step] = np.random.uniform(0, alpha, size=len(D_steps[step]))
+    jumps[step] = False
     
 dB_dt_steps[-1], dD_dt_steps[-1] = dX_dt(B_steps[-1], D_steps[-1], g[-1])
-
+jumps_shifted = np.roll(jumps, -1)
 
 # Save the results as the new training data
-B_input = B_steps
-D_input = D_steps
-dB_dt = dB_dt_steps
-dD_dt = dD_dt_steps
-del B_steps, D_steps, dB_dt_steps, dD_dt_steps
+B_input = B_steps[jumps_shifted]
+D_input = D_steps[jumps_shifted]
+g_input = g[jumps_shifted]
+dB_dt = dB_dt_steps[jumps_shifted]
+dD_dt = dD_dt_steps[jumps_shifted]
 
 # Plot D(t), B(t) and g(t) for the first simulation
 fig, axs = plt.subplots(3, 1, figsize = (10,7.5))
 
-axs[0].plot(t, D_input[:,0], '-b', label = 'Minimal model')
+axs[0].plot(t, D_steps[:,0], '-b', label = 'Minimal model')
 axs[0].set_ylim(0)
 axs[0].set_ylabel('soil thickness')
 axs[0].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
 axs[0].tick_params(axis="both", which="both", direction="in", 
                         top=True, right=True)
 
-axs[1].plot(t, B_input[:,0], '-b')
+axs[1].plot(t, B_steps[:,0], '-b')
 axs[1].set_ylim(0)
 axs[1].set_ylabel('biomass')
 axs[1].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
@@ -130,6 +136,7 @@ axs[2].tick_params(axis="both", which="both", direction="in",
 fig.patch.set_alpha(1)
 plt.setp(axs, xlim=(0, n_years))
 plt.savefig(f'results/train_sim_0.png')
+del B_steps, D_steps, dB_dt_steps, dD_dt_steps
 
 # Save the necessary data for the system evolution
 X_ev = system_ev
@@ -138,7 +145,7 @@ for i, element in enumerate(X_ev):
     X_ev[i] = [B_input[:,element], D_input[:,element], g[:,element]]
 
 # Define input and output variables and delete unnecessary variables
-X = np.column_stack((B_input.flatten('F'),D_input.flatten('F'),g.flatten('F')))
+X = np.column_stack((B_input.flatten('F'),D_input.flatten('F'),g_input.flatten('F')))
 y = np.column_stack((dB_dt.flatten('F'),dD_dt.flatten('F')))
 del B_input,D_input,g,dB_dt,dD_dt
 
