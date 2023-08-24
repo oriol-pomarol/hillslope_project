@@ -22,36 +22,37 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
 
   if (mode=='nn' or mode=='all'):
 
-    # Set a random seed for tensorflow
+    # Set a random seed for tensorflow and numpy to ensure reproducibility
     tf.random.set_seed(10)
-
-    # Set all layers to use float64
-    tf.keras.backend.set_floatx('float64')
+    np.random.seed(10)
 
     # Obtain the standard deviations of the training data
     dB_dt_std = np.std(y_train[:,0])
     dD_dt_std = np.std(y_train[:,1])
 
     #define a loss function
-    def custom_mse(y_true, y_pred):
+    def custom_mae(y_true, y_pred):
       loss = y_pred - y_true
       loss = loss / [dB_dt_std, dD_dt_std]
-      loss = K.square(loss)
+      loss = K.abs(loss)
       loss = K.sum(loss, axis=1) 
       return loss
 
-    hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu', 'learning_rate':1E-5, 'batch_size':64}
+    hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu', 'learning_rate':1E-5,
+          'batch_size':64, 'l1_reg':1e-4}
 
     # Define the model
     nnetwork = keras.Sequential()
     for n_units in hp['units']:
-      nnetwork.add(tf.keras.layers.Dense(units=n_units, activation=hp['act_fun']))
-    nnetwork.add(keras.layers.Dense(2, activation='linear', kernel_regularizer=keras.regularizers.l1(0.01)))
+      nnetwork.add(tf.keras.layers.Dense(units=n_units, activation=hp['act_fun'],
+                                         kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
+    nnetwork.add(keras.layers.Dense(2, activation='linear',
+                                    kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
 
     # Compile and fit the model
     n_epochs = 7
     print('Starting Neural Network training...')
-    nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mse)
+    nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
     history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val), 
                            batch_size = hp['batch_size'])
 

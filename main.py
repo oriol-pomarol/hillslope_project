@@ -49,7 +49,7 @@ dt = 0.5        # time step, 7/365 in paper, 0.1 for stability in results
 n_steps = len(B_input)
 n_years = dt*n_steps   # maximum number of years to run, 20000 in paper
 prob_new_B = 0.05 # probability of setting a new random B value
-prob_new_D = 0.005 # probability of setting a new random B value
+prob_new_D = 0.05 # probability of setting a new random B value
 
 # Define the physical parameters
 r, c, i, d, s = 2.1, 2.9, -0.7, 0.04, 0.4 
@@ -177,7 +177,8 @@ run_summary += "".join(['\n\n***DATA***',
                         # '\nrmv_samples = {}'.format(np.sum(zero_values)),
                         '\ntest_size = {}'.format(test_size),
                         '\nval_size = {}'.format(val_size),
-                        '\nprob_new_B = {}'.format(prob_new_B)])
+                        '\nprob_new_B = {}'.format(prob_new_B),
+                        '\nprob_new_D = {}'.format(prob_new_D)])
                         
 print('Successfully loaded and formatted data...')
 
