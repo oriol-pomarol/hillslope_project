@@ -24,8 +24,8 @@ print('Successfully imported libraries and modules.')
 # Set which functionalities to use
 model_training = 'all'      # False, 'rf', 'nn' or 'all'.
 model_evaluation = 'all'    # False, 'train', 'test', 'all'
-plots = ['surface', 'colormesh']         # ['surface', 'colormesh', 'tipping']
-system_ev = [0,'val_data_lin', 'val_data_sin']              # [0,1,2,'val_data_sin','val_data_lin']
+plots = []         # ['surface', 'colormesh', 'tipping']
+system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
                        '\nmodel_training = {}'.format(model_training),
@@ -41,15 +41,31 @@ data_file = 'gd_data.pkl'
 print('Loading and formatting data...')
 with open(os.path.join('data', data_file), 'rb') as f:
     B_input,D_input,g,_,_ = pickle.load(f)
+    
+# # Subset the first 5 columns (for test purposes)
+# B_input = B_input[:, :5]
+# D_input = D_input[:, :5]
+# g = g[:, :5]
+
+def gen_g_hy(n_steps=0):
+  g = np.ones(n_steps) * np.random.uniform(0, 3)
+  prob_new_g = 0.01 # probability of setting a new random g value
+  for step in range(1, n_steps):
+    g[step] = g[step-1]
+    if np.random.choice([True, False], p=[prob_new_g, 1 - prob_new_g]):
+      g[step] = np.random.uniform(0, 3)
+  return g
 
 # Define some run parameters
 Bo = B_input[0]   # initial value of B
 Do = D_input[0]   # initial value of D
-dt = 0.5        # time step, 7/365 in paper, 0.1 for stability in results
+dt = 0.5        # time step, 7/365 in paper, 0.5 for stability in results
 n_steps = len(B_input)
 n_years = dt*n_steps   # maximum number of years to run, 20000 in paper
-prob_new_B = 0.05 # probability of setting a new random B value
-prob_new_D = 0.05 # probability of setting a new random B value
+prob_new_B = 0.01 # probability of setting a new random B value
+prob_new_D = 0.01 # probability of setting a new random D value
+for i in range(g.shape[1]):
+  g[:, i] = gen_g_hy(n_steps=n_steps)
 
 # Define the physical parameters
 r, c, i, d, s = 2.1, 2.9, -0.7, 0.04, 0.4 
@@ -75,7 +91,7 @@ dD_dt_steps = np.ones_like(D_input)
 
 # Create a jumps array to keep track of when they happen
 jumps = np.array([True] * B_input.shape[0])
-jumps[0] = False # Because it will become the last, that is also not useful
+jumps[0] = False
 
 # Allow the system to evolve
 for step in range(1,n_steps):
@@ -156,24 +172,27 @@ del B_input,D_input,g,dB_dt,dD_dt
 # X = X[~zero_values]
 # y = y[~zero_values]
 
-n_samples = X.shape[0]
-print(f"{n_samples} final samples.")
+shape_data = X.shape
+print("Final data shape:", shape_data)
 
 # Split between training and test data and delete unnecessary data
 test_size = 0.2
-X_train, X_test, y_train, y_test = train_test_split(X, y,
+X_train_val, X_test, y_train_val, y_test = train_test_split(X, y,
                                                     test_size=test_size,
                                                     shuffle=False)
 del X, y
 
 # Split between training and validation data
 val_size = 0.1
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, 
+X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, 
                                                   test_size=val_size/(1-test_size),
                                                   shuffle=True, random_state=123)
+del X_train_val, y_train_val
+train_samples = X_train.shape[0]
 # Add the data characteristics to the summary
 run_summary += "".join(['\n\n***DATA***',
-                        '\nn_samples = {}'.format(n_samples),
+                        '\nshape_data = {}'.format(shape_data),
+                        '\ntrain_samples = {}'.format(train_samples),
                         # '\nrmv_samples = {}'.format(np.sum(zero_values)),
                         '\ntest_size = {}'.format(test_size),
                         '\nval_size = {}'.format(val_size),
