@@ -86,6 +86,7 @@ def test_eval(nnetwork, rforest, X_test, y_test):
   axs[1].autoscale()
 
   fig.colorbar(h0[3], ax=axs[0])
+  print(min(y_test[:,1]), max(y_test[:,1]), min(y_pred_nn[:,1]), max(y_pred_nn[:,1]))
   fig.colorbar(h1[3], ax=axs[1])
   fig.suptitle('Neural network')
   fig.patch.set_alpha(1)
