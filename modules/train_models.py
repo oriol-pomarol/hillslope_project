@@ -12,6 +12,15 @@ import joblib as jb
 
 def train_models(X_train, X_val, y_train, y_val, mode='all'):
 
+  # Drop a percentage of the training data for better performance
+  drop_size = 0.2
+  drop_mask = np.random.choice([True, False], size = len(X_train), p = [1-drop_size, drop_size])
+  X_train = X_train[drop_mask]
+  y_train = y_train[drop_mask]  
+
+  print('Dropped {:.1f}% of the training data.'.format(100*drop_size))
+  print('Training set size: {}'.format(len(X_train)))
+
   if (mode=='rf' or mode=='all'):
     # Start the random forest model training
     print('Starting Random Forest training...')
@@ -46,17 +55,21 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
       loss = K.sum(loss, axis=1) 
       return loss
 
-    hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu',
-          'learning_rate':1E-5, 'batch_size':64, 'l1_reg':1e-4}
+    hp = {'units':[9, 27, 81, 162, 324, 648], 'act_fun':'relu',
+          'learning_rate':1E-5, 'batch_size':64, 'l1_reg':1e-5}
     
     # Define what hyperparameter to tune and its values
     tuning_hp_name = 'l1_reg'
-    tuning_hp_vals = [1e-6, 1e-5, 1e-4, 1e-3]
+    tuning_hp_vals = [1e-6, 1e-5, 1e-4]
 
-    models = []
-    histories = []
     losses = []
     hp_vals = []
+
+    # Take a subset of the data for tuning
+    tuning_size = 0.1
+    tuning_mask = np.random.choice([True, False], size = len(X_train), p = [tuning_size, 1-tuning_size])
+    X_tuning = X_train[tuning_mask]
+    y_tuning = y_train[tuning_mask]
 
     for i, value in enumerate(tuning_hp_vals):
       print(f'Testing hp {i+1} of {len(tuning_hp_vals)}...')
@@ -70,14 +83,12 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
       nnetwork.add(keras.layers.Dense(2, activation='linear',
                                       kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
 
-        # Compile and fit the model
+      # Compile and fit the model
       n_epochs = 150
       nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
       train_nn_start = time.time()
-      history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val), 
+      history = nnetwork.fit(X_tuning, y_tuning, epochs = n_epochs, validation_data = (X_val, y_val), 
                             batch_size = hp['batch_size'])
-      models.append(nnetwork)
-      histories.append(history)
       losses.append(history.history['val_loss'][-1])
       train_nn_end = time.time()
       train_nn_time = (train_nn_end - train_nn_start)/60
@@ -86,11 +97,27 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     # Save a csv with each model's loss and hp
     pd.DataFrame({'loss':losses, tuning_hp_name:hp_vals}).to_csv(os.path.join('results','hp_tuning.csv'))
 
-    # Select the best model
-    nnetwork = models[np.argmin(losses)]
-    history = histories[np.argmin(losses)]
-    print('Best model has {} = {:.1g}.'.format(tuning_hp_name,
-                                               hp_vals[np.argmin(losses)]))
+    # Select the best hyperparameter and retrain the model
+    best_hp = hp_vals[np.argmin(losses)]
+    print('Best model has {} = {:.1g}.'.format(tuning_hp_name, best_hp))
+    hp[tuning_hp_name] = best_hp
+
+    # Define the model
+    nnetwork = keras.Sequential()
+    for n_units in hp['units']:
+      nnetwork.add(tf.keras.layers.Dense(units=n_units, activation=hp['act_fun'],
+                                        kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
+    nnetwork.add(keras.layers.Dense(2, activation='linear',
+                                    kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
+    # Compile and fit the model
+    n_epochs = 150
+    nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
+    train_nn_start = time.time()
+    history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val),
+                            batch_size = hp['batch_size'])
+    train_nn_end = time.time()
+    train_nn_time = (train_nn_end - train_nn_start)/60
+    print('NN training time: {:.3g} minutes.'.format(train_nn_time))
 
 
     # Plot the MSE history of the training

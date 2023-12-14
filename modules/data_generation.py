@@ -22,7 +22,7 @@ def data_generation():
     n_sim = 100                 # number of simulations to run
     n_years = 20000             # maximum number of years to run, default 20000
     dt = 0.5                    # time step, 7/365 in paper, default 0.5
-    n_steps = int(n_steps/dt)   # number of steps to run each simulation
+    n_steps = int(n_years/dt)   # number of steps to run each simulation
     prob_new_B = 0.01           # probability of setting a new random B value
     prob_new_D = 0.01           # probability of setting a new random D value
     prob_new_g = 0.01           # probability of setting a new random g value
@@ -109,27 +109,27 @@ def data_generation():
     print(f"{np.sum(zeros_mask)} zero values found.")
 
     # Change the data into a list of arrays corresponding to each simulation
-    B_jumps = np.split(B_jumps, n_sim, axis=1)
-    D_jumps = np.split(D_jumps, n_sim, axis=1)
-    g_jumps = np.split(g_jumps, n_sim, axis=1)
-    dB_dt_jumps = np.split(dB_dt_jumps, n_sim, axis=1)
-    dD_dt_jumps = np.split(dD_dt_jumps, n_sim, axis=1)
-    train_mask_jumps = np.split(train_mask_jumps, n_sim, axis=1)
+    B_jumps = [np.squeeze(arr) for arr in np.split(B_jumps, n_sim, axis=1)]
+    D_jumps = [np.squeeze(arr) for arr in np.split(D_jumps, n_sim, axis=1)]
+    g_jumps = [np.squeeze(arr) for arr in np.split(g_jumps, n_sim, axis=1)]
+    dB_dt_jumps = [np.squeeze(arr) for arr in np.split(dB_dt_jumps, n_sim, axis=1)]
+    dD_dt_jumps = [np.squeeze(arr) for arr in np.split(dD_dt_jumps, n_sim, axis=1)]
+    train_mask_jumps = [np.squeeze(arr) for arr in np.split(train_mask_jumps, n_sim, axis=1)]
 
     # Join the data into X and y arrays
     X_jumps = [np.column_stack((B_jumps[i], D_jumps[i], g_jumps[i])) for i in range(n_sim)]
     y_jumps = [np.column_stack((dB_dt_jumps[i], dD_dt_jumps[i])) for i in range(n_sim)]
 
     # Filter the jumps data
-    X_jumps_filtered = [X_jumps[i][train_mask_jumps[i]] for i in range(n_sim)]
-    y_jumps_filtered = [y_jumps[i][train_mask_jumps[i]] for i in range(n_sim)]
-
+    X_jumps_filtered = [np.compress(train_mask_jumps[i], X_jumps[i], axis=0) for i in range(n_sim)]
+    y_jumps_filtered = [np.compress(train_mask_jumps[i], y_jumps[i], axis=0) for i in range(n_sim)]   
+    
     # Start the system anew for the linear training data
     g_init = 0.0
     B_init = c
     D_init = alpha
     dB_dt_init, dD_dt_init = dX_dt(B_init, D_init, g_init) 
-    max_steps_init = 1e4
+    max_steps_init = int(1e4)
 
     # Allow the system to evolve until it reaches equilibrium (at g=0)
     for step in range(0, max_steps_init):
@@ -147,7 +147,7 @@ def data_generation():
     print(f"|dB_dt| = {abs(dB_dt_init)}, |dD_dt| = {abs(dD_dt_init)}.")
 
     # Generate a sequence with a linear g increase
-    n_steps = 1e7
+    n_steps = int(1e7)
     g_lin = np.linspace(0, 2, n_steps)
     B_lin = np.ones_like(g_lin) * B_init
     D_lin = np.ones_like(g_lin) * D_init
