@@ -51,47 +51,50 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     
     # Define what hyperparameter to tune and its values
     tuning_hp_name = 'l1_reg'
-    tuning_hp_vals = [0, 1e-6, 1e-4]
+    tuning_hp_vals = []
 
     losses = []
     hp_vals = []
 
-    # Take a subset of the data for tuning
-    tuning_size = 0.1
-    tuning_mask = np.random.choice([True, False], size = len(X_train), p = [tuning_size, 1-tuning_size])
-    X_tuning = X_train[tuning_mask]
-    y_tuning = y_train[tuning_mask]
+    if tuning_hp_vals:
+      print('Starting hyperparameter tuning...')
+      # Take a subset of the data for tuning
+      tuning_size = 0.1
+      tuning_mask = np.random.choice([True, False], size = len(X_train), p = [tuning_size, 1-tuning_size])
+      X_tuning = X_train[tuning_mask]
+      y_tuning = y_train[tuning_mask]
 
-    for i, value in enumerate(tuning_hp_vals):
-      print(f'Testing hp {i+1} of {len(tuning_hp_vals)}...')
-      hp[tuning_hp_name] = value
-      hp_vals.append(value)
-      # Define the model
-      nnetwork = keras.Sequential()
-      for n_units in hp['units']:
-        nnetwork.add(tf.keras.layers.Dense(units=n_units, activation=hp['act_fun'],
-                                          kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
-      nnetwork.add(keras.layers.Dense(2, activation='linear',
-                                      kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
+      for i, value in enumerate(tuning_hp_vals):
+        print(f'Testing hp {i+1} of {len(tuning_hp_vals)}...')
+        hp[tuning_hp_name] = value
+        hp_vals.append(value)
+        # Define the model
+        nnetwork = keras.Sequential()
+        for n_units in hp['units']:
+          nnetwork.add(tf.keras.layers.Dense(units=n_units, activation=hp['act_fun'],
+                                            kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
+        nnetwork.add(keras.layers.Dense(2, activation='linear',
+                                        kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
 
-      # Compile and fit the model
-      n_epochs = 150
-      nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
-      train_nn_start = time.time()
-      history = nnetwork.fit(X_tuning, y_tuning, epochs = n_epochs, validation_data = (X_val, y_val), 
-                            batch_size = hp['batch_size'])
-      losses.append(history.history['val_loss'][-1])
-      train_nn_end = time.time()
-      train_nn_time = (train_nn_end - train_nn_start)/60
-      print('NN training time: {:.3g} minutes.'.format(train_nn_time))
+        # Compile and fit the model
+        n_epochs = 150
+        nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
+        train_nn_start = time.time()
+        history = nnetwork.fit(X_tuning, y_tuning, epochs = n_epochs, validation_data = (X_val, y_val), 
+                              batch_size = hp['batch_size'])
+        losses.append(history.history['val_loss'][-1])
+        train_nn_end = time.time()
+        train_nn_time = (train_nn_end - train_nn_start)/60
+        print('NN training time: {:.3g} minutes.'.format(train_nn_time))
 
-    # Save a csv with each model's loss and hp
-    pd.DataFrame({'loss':losses, tuning_hp_name:hp_vals}).to_csv(os.path.join('results','hp_tuning.csv'))
+      # Save a csv with each model's loss and hp
+      pd.DataFrame({'loss':losses, tuning_hp_name:hp_vals}).to_csv(os.path.join('results','hp_tuning.csv'))
 
-    # Select the best hyperparameter and retrain the model
-    best_hp = hp_vals[np.argmin(losses)]
-    print('Best model has {} = {:.1g}.'.format(tuning_hp_name, best_hp))
-    hp[tuning_hp_name] = best_hp
+      # Select the best hyperparameter and retrain the model
+      best_hp = hp_vals[np.argmin(losses)]
+      print('Best model has {} = {:.1g}.'.format(tuning_hp_name, best_hp))
+      hp[tuning_hp_name] = best_hp
+      print('Successfully completed hyperparameter tuning.')
 
     # Define the model
     nnetwork = keras.Sequential()
@@ -139,7 +142,8 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
       
   # Save the training summary
   if (mode=='rf' or mode=='all'):
-    rf_summary = "".join(['\n\n***RANDOM FOREST***',
+    rf_summary = "".join(['\n\n***MODEL TRAINING***',
+                          '\n\nRANDOM FOREST',
                           '\ntrain_rf_time = {:.1f} minutes'.format(train_rf_time),
                           '\nn_estimators = {}'.format(rforest.get_params()['n_estimators']),
                           '\nmax_features = {}'.format(rforest.get_params()['max_features']),
@@ -147,7 +151,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
                           '\nmin_samples_leaf = {}'.format(rforest.get_params()['min_samples_leaf']),
                           '\nmin_samples_split = {}'.format(rforest.get_params()['min_samples_split'])])
   if (mode=='nn' or mode=='all'):
-    nn_summary = "".join(['\n\n***NEURAL NETWORK***',
+    nn_summary = "".join(['\n\nNEURAL NETWORK',
                           '\ntrain_nn_time = {:.1f} minutes'.format(train_nn_time),
                           '\nloss_name = {}'.format(loss_name),
                           '\nn_epochs = {}'.format(n_epochs)])

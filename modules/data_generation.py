@@ -131,7 +131,7 @@ def data_generation():
     B_init = c
     D_init = alpha
     dB_dt_init, dD_dt_init = dX_dt(B_init, D_init, g_init) 
-    max_steps_init = int(1e4)
+    max_steps_init = int(1e5)
 
     # Allow the system to evolve until it reaches equilibrium (at g=0)
     for step in range(0, max_steps_init):
@@ -211,4 +211,18 @@ def data_generation():
 
     print(f"Final linear data size: {len(X_lin)}")
 
-    return(X_jumps_filtered, y_jumps_filtered, X_lin, y_lin)
+    # Report the data generation parameters
+    gen_summary = "".join(['\n\n***DATA GENERATION:***',
+                           '\n\nJUMPS DATA:',
+                           '\nn_sim = {}'.format(n_sim),
+                           '\nn_years = {}'.format(n_years),
+                           '\ndt = {}'.format(dt),
+                           '\nprob_new_B = {}'.format(prob_new_B),
+                           '\nprob_new_D = {}'.format(prob_new_D),
+                           '\nprob_new_g = {}'.format(prob_new_g),
+                           '\n\nLINEAR DATA:',
+                           '\nB_init = {}'.format(B_init),
+                           '\nD_init = {}'.format(D_init),
+                           '\nn_steps = {}'.format(n_steps)])
+
+    return gen_summary, X_jumps_filtered, y_jumps_filtered, X_lin, y_lin

@@ -61,7 +61,7 @@ def data_formatting(X_jumps, y_jumps, X_lin, y_lin, mode='combined'):
   print('Final training set size: {}'.format(len(X_train)))
   
   # Add the data characteristics to the summary
-  data_summary = "".join(['\n\n***DATA***',
+  data_summary = "".join(['\n\n***DATA FORMATTING***',
                           '\ntest_size = {}'.format(test_size),
                           '\nval_size = {}'.format(val_size),
                           '\ndrop_size = {}'.format(drop_size),

@@ -37,7 +37,8 @@ start_time = time.time()
 
 # Load and preprocess/generate the data
 print('Generating data...')
-X_jumps, y_jumps, X_lin, y_lin = data_generation()
+gen_summary, X_jumps, y_jumps, X_lin, y_lin = data_generation()
+run_summary += gen_summary
 print('Successfully generated data...')
 
 # Prepare the data for training
