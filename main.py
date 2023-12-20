@@ -42,8 +42,9 @@ print('Successfully generated data...')
 
 # Prepare the data for training
 print('Formatting data...')
-X_train, X_val, X_test, y_train, y_val, y_test = \
-  data_formatting(X_jumps, y_jumps, X_lin, y_lin)
+data_summary, X_train, X_val, X_test, y_train, y_val, y_test = \
+  data_formatting(X_jumps, y_jumps, X_lin, y_lin, mode='combined')
+run_summary += data_summary
 print('Successfully formatted data...')
 
 # Train the models if specified

@@ -102,7 +102,7 @@ def data_generation():
     plt.setp(axs, xlim=(0, n_years))
     plt.savefig(f'results/train_jumps_sim_0.png')
 
-    # Mask observations where B, D, dB_dt and dD_dt are all zero
+    # Mask data where B and D are zero
     zeros_mask = (B_jumps == 0.0) & (D_jumps == 0.0)
     train_mask_jumps = ~(jumps_mask | zeros_mask)
 
@@ -122,7 +122,9 @@ def data_generation():
 
     # Filter the jumps data
     X_jumps_filtered = [np.compress(train_mask_jumps[i], X_jumps[i], axis=0) for i in range(n_sim)]
-    y_jumps_filtered = [np.compress(train_mask_jumps[i], y_jumps[i], axis=0) for i in range(n_sim)]   
+    y_jumps_filtered = [np.compress(train_mask_jumps[i], y_jumps[i], axis=0) for i in range(n_sim)]
+
+    print(f"Final jump data size: {np.sum([len(X_jumps_filtered[i]) for i in range(n_sim)])}")
     
     # Start the system anew for the linear training data
     g_init = 0.0
@@ -147,7 +149,7 @@ def data_generation():
     print(f"|dB_dt| = {abs(dB_dt_init)}, |dD_dt| = {abs(dD_dt_init)}.")
 
     # Generate a sequence with a linear g increase
-    n_steps = int(1e7)
+    n_steps = int(1e6)
     g_lin = np.linspace(0, 2, n_steps)
     B_lin = np.ones_like(g_lin) * B_init
     D_lin = np.ones_like(g_lin) * D_init
@@ -206,5 +208,7 @@ def data_generation():
     # Join the lin data into X and y arrays
     X_lin = np.column_stack((B_lin, D_lin, g_lin))
     y_lin = np.column_stack((dB_dt_lin, dD_dt_lin))
+
+    print(f"Final linear data size: {len(X_lin)}")
 
     return(X_jumps_filtered, y_jumps_filtered, X_lin, y_lin)

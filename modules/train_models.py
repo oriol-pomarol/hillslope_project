@@ -12,15 +12,6 @@ import joblib as jb
 
 def train_models(X_train, X_val, y_train, y_val, mode='all'):
 
-  # Drop a percentage of the training data for better performance
-  drop_size = 0.2
-  drop_mask = np.random.choice([True, False], size = len(X_train), p = [1-drop_size, drop_size])
-  X_train = X_train[drop_mask]
-  y_train = y_train[drop_mask]  
-
-  print('Dropped {:.1f}% of the training data.'.format(100*drop_size))
-  print('Training set size: {}'.format(len(X_train)))
-
   if (mode=='rf' or mode=='all'):
     # Start the random forest model training
     print('Starting Random Forest training...')
@@ -55,12 +46,12 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
       loss = K.sum(loss, axis=1) 
       return loss
 
-    hp = {'units':[9, 27, 81, 162, 324, 648], 'act_fun':'relu',
-          'learning_rate':1E-5, 'batch_size':64, 'l1_reg':1e-5}
+    hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu',
+          'learning_rate':1E-5, 'batch_size':128, 'l1_reg':1e-5}
     
     # Define what hyperparameter to tune and its values
     tuning_hp_name = 'l1_reg'
-    tuning_hp_vals = [1e-6, 1e-5, 1e-4]
+    tuning_hp_vals = [0, 1e-6, 1e-4]
 
     losses = []
     hp_vals = []
