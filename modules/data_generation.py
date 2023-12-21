@@ -151,7 +151,7 @@ def data_generation():
     print(f"|dB_dt| = {abs(dB_dt_init)}, |dD_dt| = {abs(dD_dt_init)}.")
 
     # Generate a sequence with a linear g increase
-    prob_disturbance = 0.00
+    prob_disturbance = 0.001
     strength_disturbance = 0.1
     n_steps = int(1e6)
     g_lin = np.linspace(0, 2, n_steps)
@@ -173,7 +173,7 @@ def data_generation():
         if np.random.uniform(0, 1) < prob_disturbance:
             B_lin[step] = np.clip(B_lin[step] + np.random.uniform(-1, 1)*strength_disturbance, 0.0, c)
             D_lin[step] = np.clip(D_lin[step] + np.random.uniform(-1, 1)*strength_disturbance*0.1, 0.0, alpha)
-            dB_dt_lin, dD_dt_lin = dX_dt(B_lin[step], D_lin[step], g_lin[step])
+            dB_dt_lin[step], dD_dt_lin[step] = dX_dt(B_lin[step], D_lin[step], g_lin[step])
             dist_mask[step-1] = True
 
     # Plot the linear g increase results
