@@ -9,7 +9,7 @@ def colormesh_plots(X_train, y_train):
   # Set the parameters
   n_bins = 24
   B_max = 3
-  D_max = 0.6
+  D_max = 0.4
   g_range = (0,3)
 
   # Initialize the variables for observations, mean and standard deviations 

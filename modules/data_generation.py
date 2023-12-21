@@ -25,7 +25,7 @@ def data_generation():
     n_steps = int(n_years/dt)   # number of steps to run each simulation
     prob_new_B = 0.01           # probability of setting a new random B value
     prob_new_D = 0.01           # probability of setting a new random D value
-    prob_new_g = 0.01           # probability of setting a new random g value
+    prob_new_g = 0.001           # probability of setting a new random g value
 
     # Generate the time sequence
     t = np.linspace(0, n_years, n_steps)
@@ -56,6 +56,7 @@ def data_generation():
         # Compute the new values, forced to be above 0 and below their theoretical max
         B_jumps[step] = np.clip(B_jumps[step-1] + steps_slopes[0]*dt, 0.0, c)
         D_jumps[step] = np.clip(D_jumps[step-1] + steps_slopes[1]*dt, 0.0, alpha)
+        g_jumps[step] = g_jumps[step-1]
 
         # Add a random chance to set a new random B value
         jump_B = np.random.choice([True, False], size=len(B_jumps[step]), p=[prob_new_B, 1 - prob_new_B])
