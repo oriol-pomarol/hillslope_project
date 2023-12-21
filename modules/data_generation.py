@@ -128,6 +128,7 @@ def data_generation():
     print(f"Final jump data size: {np.sum([len(X_jumps_filtered[i]) for i in range(n_sim)])}")
     
     # Start the system anew for the linear training data
+
     g_init = 0.0
     B_init = c
     D_init = alpha
@@ -150,6 +151,8 @@ def data_generation():
     print(f"|dB_dt| = {abs(dB_dt_init)}, |dD_dt| = {abs(dD_dt_init)}.")
 
     # Generate a sequence with a linear g increase
+    prob_disturbance = 0.00
+    strength_disturbance = 0.1
     n_steps = int(1e6)
     g_lin = np.linspace(0, 2, n_steps)
     B_lin = np.ones_like(g_lin) * B_init
@@ -157,11 +160,21 @@ def data_generation():
     dB_dt_lin = np.ones_like(g_lin) * dB_dt_init
     dD_dt_lin = np.ones_like(g_lin) * dD_dt_init
 
+    # Create a mask array to keep track of disturbances
+    dist_mask = np.full(n_steps, False)
+
     # Allow the system to evolve
     for step in range(1, n_steps):
         B_lin[step] = np.clip(B_lin[step-1] + dB_dt_lin[step-1]*dt, 0.0, c)
         D_lin[step] = np.clip(D_lin[step-1] + dD_dt_lin[step-1]*dt, 0.0, alpha)
         dB_dt_lin[step], dD_dt_lin[step] = dX_dt(B_lin[step], D_lin[step], g_lin[step])
+
+        # Add a random chance to disturb the system
+        if np.random.uniform(0, 1) < prob_disturbance:
+            B_lin[step] = np.clip(B_lin[step] + np.random.uniform(-1, 1)*strength_disturbance, 0.0, c)
+            D_lin[step] = np.clip(D_lin[step] + np.random.uniform(-1, 1)*strength_disturbance*0.1, 0.0, alpha)
+            dB_dt_lin, dD_dt_lin = dX_dt(B_lin[step], D_lin[step], g_lin[step])
+            dist_mask[step-1] = True
 
     # Plot the linear g increase results
     years = np.linspace(0, n_steps*dt, len(g_lin))
@@ -207,8 +220,8 @@ def data_generation():
     plt.savefig(f'results/train_lin_BD.png')
 
     # Join the lin data into X and y arrays
-    X_lin = np.column_stack((B_lin, D_lin, g_lin))
-    y_lin = np.column_stack((dB_dt_lin, dD_dt_lin))
+    X_lin = np.column_stack((B_lin[~dist_mask], D_lin[~dist_mask], g_lin[~dist_mask]))
+    y_lin = np.column_stack((dB_dt_lin[~dist_mask], dD_dt_lin[~dist_mask]))
 
     print(f"Final linear data size: {len(X_lin)}")
 
