@@ -127,7 +127,7 @@ def data_generation():
 
     print(f"Final jump data size: {np.sum([len(X_jumps_filtered[i]) for i in range(n_sim)])}")
     
-    # Start the system anew for the linear training data
+    # Start the system anew for the g_increase training data
 
     g_init = 0.0
     B_init = c
@@ -150,51 +150,51 @@ def data_generation():
     print(f"Initial values: B = {B_init}, D = {D_init} after {step+1} steps.")
     print(f"|dB_dt| = {abs(dB_dt_init)}, |dD_dt| = {abs(dD_dt_init)}.")
 
-    # Generate a sequence with a linear g increase
+    # Generate a sequence with a quadratic g increase
     prob_disturbance = 0.001
-    strength_disturbance = 0.1
+    strength_disturbance = 0.05
     n_steps = int(1e6)
-    g_lin = np.linspace(0, 2, n_steps)
-    B_lin = np.ones_like(g_lin) * B_init
-    D_lin = np.ones_like(g_lin) * D_init
-    dB_dt_lin = np.ones_like(g_lin) * dB_dt_init
-    dD_dt_lin = np.ones_like(g_lin) * dD_dt_init
+    g_inc = np.square(np.linspace(0, 2**0.5, n_steps))
+    B_inc = np.ones_like(g_inc) * B_init
+    D_inc = np.ones_like(g_inc) * D_init
+    dB_dt_inc = np.ones_like(g_inc) * dB_dt_init
+    dD_dt_inc = np.ones_like(g_inc) * dD_dt_init
 
     # Create a mask array to keep track of disturbances
     dist_mask = np.full(n_steps, False)
 
     # Allow the system to evolve
     for step in range(1, n_steps):
-        B_lin[step] = np.clip(B_lin[step-1] + dB_dt_lin[step-1]*dt, 0.0, c)
-        D_lin[step] = np.clip(D_lin[step-1] + dD_dt_lin[step-1]*dt, 0.0, alpha)
-        dB_dt_lin[step], dD_dt_lin[step] = dX_dt(B_lin[step], D_lin[step], g_lin[step])
+        B_inc[step] = np.clip(B_inc[step-1] + dB_dt_inc[step-1]*dt, 0.0, c)
+        D_inc[step] = np.clip(D_inc[step-1] + dD_dt_inc[step-1]*dt, 0.0, alpha)
+        dB_dt_inc[step], dD_dt_inc[step] = dX_dt(B_inc[step], D_inc[step], g_inc[step])
 
         # Add a random chance to disturb the system
         if np.random.uniform(0, 1) < prob_disturbance:
-            B_lin[step] = np.clip(B_lin[step] + np.random.uniform(-1, 1)*strength_disturbance, 0.0, c)
-            D_lin[step] = np.clip(D_lin[step] + np.random.uniform(-1, 1)*strength_disturbance*0.1, 0.0, alpha)
-            dB_dt_lin[step], dD_dt_lin[step] = dX_dt(B_lin[step], D_lin[step], g_lin[step])
+            B_inc[step] = np.clip(B_inc[step] + np.random.uniform(-1, 1)*strength_disturbance, 0.0, c)
+            D_inc[step] = np.clip(D_inc[step] + np.random.uniform(-1, 1)*strength_disturbance*0.1, 0.0, alpha)
+            dB_dt_inc[step], dD_dt_inc[step] = dX_dt(B_inc[step], D_inc[step], g_inc[step])
             dist_mask[step-1] = True
 
-    # Plot the linear g increase results
-    years = np.linspace(0, n_steps*dt, len(g_lin))
+    # Plot the g_increase results
+    years = np.linspace(0, n_steps*dt, len(g_inc))
     fig, axs = plt.subplots(3, 1, figsize = (10,7.5))
 
-    axs[0].plot(years, D_lin, '-b', label = 'Minimal model')
+    axs[0].plot(years, D_inc, '-b', label = 'Minimal model')
     axs[0].set_ylim(0)
     axs[0].set_ylabel('soil thickness')
     axs[0].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
     axs[0].tick_params(axis="both", which="both", direction="in",
                             top=True, right=True)
 
-    axs[1].plot(years, B_lin, '-b')
+    axs[1].plot(years, B_inc, '-b')
     axs[1].set_ylim(0)
     axs[1].set_ylabel('biomass')
     axs[1].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
     axs[1].tick_params(axis="both", which="both", direction="in",
                             top=True, right=True)
 
-    axs[2].plot(years, g_lin, '-b')
+    axs[2].plot(years, g_inc, '-b')
     axs[2].set_ylim(0)
     axs[2].set_ylabel('grazing pressure')
     axs[2].set_xlabel('time (years)')
@@ -203,12 +203,12 @@ def data_generation():
                             top=True, right=True)
 
     fig.patch.set_alpha(1)
-    plt.savefig(f'results/train_lin.png')
+    plt.savefig(f'results/train_inc.png')
 
     # Plot the results in a B vs D plot
     fig, axs = plt.subplots(1, 1, figsize = (10,7.5))
 
-    axs.plot(D_lin, B_lin, '-ok', label='Minimal model')
+    axs.plot(D_inc, B_inc, '-ok', label='Minimal model')
     axs.set_ylim(0)
     axs.set_xlabel('soil thickness')
     axs.set_ylabel('biomass')
@@ -217,13 +217,13 @@ def data_generation():
                             top=True, right=True)
 
     fig.patch.set_alpha(1)
-    plt.savefig(f'results/train_lin_BD.png')
+    plt.savefig(f'results/train_inc_BD.png')
 
-    # Join the lin data into X and y arrays
-    X_lin = np.column_stack((B_lin[~dist_mask], D_lin[~dist_mask], g_lin[~dist_mask]))
-    y_lin = np.column_stack((dB_dt_lin[~dist_mask], dD_dt_lin[~dist_mask]))
+    # Join the inc data into X and y arrays
+    X_inc = np.column_stack((B_inc[~dist_mask], D_inc[~dist_mask], g_inc[~dist_mask]))
+    y_inc = np.column_stack((dB_dt_inc[~dist_mask], dD_dt_inc[~dist_mask]))
 
-    print(f"Final linear data size: {len(X_lin)}")
+    print(f"Final g_increase data size: {len(X_inc)}")
 
     # Report the data generation parameters
     gen_summary = "".join(['\n\n***DATA GENERATION:***',
@@ -237,6 +237,8 @@ def data_generation():
                            '\n\nLINEAR DATA:',
                            '\nB_init = {}'.format(B_init),
                            '\nD_init = {}'.format(D_init),
-                           '\nn_steps = {}'.format(n_steps)])
+                           '\nn_steps = {}'.format(n_steps),
+                           '\nprob_disturbance = {}'.format(prob_disturbance),
+                           '\nstrength_disturbance = {}'.format(strength_disturbance)])
 
-    return gen_summary, X_jumps_filtered, y_jumps_filtered, X_lin, y_lin
+    return gen_summary, X_jumps_filtered, y_jumps_filtered, X_inc, y_inc
