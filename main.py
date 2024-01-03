@@ -59,10 +59,7 @@ rf_params = jb.load(os.path.join('data', 'rf_model.joblib'))
 # Define a variant of the random forest that uses the trees median to predict
 class MedianRandomForestRegressor(RandomForestRegressor):
   def predict(self, X):
-      all_predictions = []
-      for tree in self.estimators_:
-          all_predictions.append(tree.predict(X))
-      return np.median(all_predictions, axis=0)
+    return np.median([tree.predict(X) for tree in self.estimators_], axis=0)
 rforest = MedianRandomForestRegressor()
 rforest.__dict__ = rf_params.__dict__
 
