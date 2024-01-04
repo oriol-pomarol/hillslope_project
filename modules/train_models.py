@@ -10,20 +10,49 @@ import matplotlib.pyplot as plt
 import os
 import joblib as jb
 
-def train_models(X_train, X_val, y_train, y_val, mode='all'):
+def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
+  
+  # Store the list of data for sequential training
+  X_all_train = X_train
+  y_all_train = y_train
+  X_all_val = X_val
+  y_all_val = y_val
+
+  # Set the percentage of linear data to use for training
+  pct_lin = 0.25
 
   if (mode=='rf' or mode=='all'):
     # Start the random forest model training
     print('Starting Random Forest training...')
-    rforest = RandomForestRegressor(n_estimators = 100, max_features = 'sqrt',
-                                    max_samples = 0.4, min_samples_leaf = 2,
+    total_estimators = 200
+    n_estimators = int(total_estimators*(1-pct_lin)) if sequential \
+      else total_estimators
+
+    # If training sequentially, begin training with only the jumps data
+    if sequential:
+      X_train = X_all_train[0]
+      y_train = y_all_train[0]
+
+    rforest = RandomForestRegressor(n_estimators = n_estimators,
+                                    max_features = 'sqrt',
+                                    max_samples = 0.4,
+                                    min_samples_leaf = 2,
                                     min_samples_split = 20)
     train_rf_start = time.time()
     rforest.fit(X_train, y_train)
+
+    if sequential:
+      # Continue training with the linear data
+      X_train = X_all_train[1]
+      y_train = y_all_train[1]
+      rforest.set_params(n_estimators = total_estimators, warm_start = True)
+      rforest.fit(X_train, y_train)
+
     train_rf_end = time.time()
     train_rf_time = (train_rf_end - train_rf_start)/60
     print('RF training time: {:.3g} minutes.'.format(train_rf_time))
 
+    # Save the model
     jb.dump(rforest, os.path.join('data','rf_model.joblib')) 
     print('Successfully completed Random Forest training.')
 
@@ -46,9 +75,19 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
       loss = K.sum(loss, axis=1) 
       return loss
 
+    # Set the hyperparameters
     hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu',
           'learning_rate':1E-5, 'batch_size':128, 'l1_reg':1e-5}
+    total_epochs = 200
+    n_epochs = int(total_epochs*(1-pct_lin)) if sequential else total_epochs
     
+    # If training sequentially, begin training/tuning with jumps data
+    if sequential:
+      X_train = X_all_train[0]
+      y_train = y_all_train[0]
+      X_val = X_all_val[0]
+      y_val = y_all_val[0]
+
     # Define what hyperparameter to tune and its values
     tuning_hp_name = 'l1_reg'
     tuning_hp_vals = []
@@ -58,6 +97,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
 
     if tuning_hp_vals:
       print('Starting hyperparameter tuning...')
+
       # Take a subset of the data for tuning
       tuning_size = 0.1
       tuning_mask = np.random.choice([True, False], size = len(X_train), p = [tuning_size, 1-tuning_size])
@@ -77,7 +117,6 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
                                         kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
 
         # Compile and fit the model
-        n_epochs = 150
         nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
         train_nn_start = time.time()
         history = nnetwork.fit(X_tuning, y_tuning, epochs = n_epochs, validation_data = (X_val, y_val), 
@@ -104,16 +143,11 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     nnetwork.add(keras.layers.Dense(2, activation='linear',
                                     kernel_regularizer=keras.regularizers.l1(hp['l1_reg'])))
     # Compile and fit the model
-    n_epochs = 150
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
     train_nn_start = time.time()
     history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val),
                             batch_size = hp['batch_size'])
-    train_nn_end = time.time()
-    train_nn_time = (train_nn_end - train_nn_start)/60
-    print('NN training time: {:.3g} minutes.'.format(train_nn_time))
-
-
+    
     # Plot the MSE history of the training
     plt.figure()
     plt.plot(history.history['loss'], label='loss')
@@ -123,6 +157,30 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
     plt.xlabel('Epoch')
     plt.ylabel('Custom MSE')
     plt.savefig(os.path.join('results','training_history.png'))
+
+    if sequential:
+      # Continue training with the linear data
+      X_train = X_all_train[1]
+      y_train = y_all_train[1]
+      X_val = X_all_val[1]
+      y_val = y_all_val[1]
+      n_epochs = total_epochs*pct_lin
+      history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val),
+                              batch_size = hp['batch_size'])
+      
+      # Plot the MSE history of the training
+      plt.figure()
+      plt.plot(history.history['loss'], label='loss')
+      plt.plot(history.history['val_loss'], label='val_loss')
+      plt.yscale('log')
+      plt.legend()
+      plt.xlabel('Epoch')
+      plt.ylabel('Custom MSE')
+      plt.savefig(os.path.join('results','training_history_v2.png'))
+
+    train_nn_end = time.time()
+    train_nn_time = (train_nn_end - train_nn_start)/60
+    print('NN training time: {:.3g} minutes.'.format(train_nn_time))
 
     df = pd.DataFrame({'loss':history.history['loss'], 'val_loss':history.history['val_loss']})
     df.to_csv(os.path.join('results','training_history.csv'))
@@ -149,12 +207,13 @@ def train_models(X_train, X_val, y_train, y_val, mode='all'):
                           '\nmax_features = {}'.format(rforest.get_params()['max_features']),
                           '\nmax_samples = {}'.format(rforest.get_params()['max_samples']),
                           '\nmin_samples_leaf = {}'.format(rforest.get_params()['min_samples_leaf']),
-                          '\nmin_samples_split = {}'.format(rforest.get_params()['min_samples_split'])])
+                          '\nmin_samples_split = {}'.format(rforest.get_params()['min_samples_split']),
+                          '\npct_lin = {}'.format(pct_lin) if sequential else ''])
   if (mode=='nn' or mode=='all'):
     nn_summary = "".join(['\n\nNEURAL NETWORK',
                           '\ntrain_nn_time = {:.1f} minutes'.format(train_nn_time),
                           '\nloss_name = {}'.format(loss_name),
-                          '\nn_epochs = {}'.format(n_epochs)])
+                          '\nn_epochs = {}'.format(total_epochs)])
 
     for key, value in hp.items():
       nn_summary += f"\n{key} = {value}"
