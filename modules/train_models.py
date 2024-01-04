@@ -70,7 +70,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
     #define a loss function
     def custom_mae(y_true, y_pred):
       loss = y_pred - y_true
-      loss = loss / [2*dB_dt_std, dD_dt_std]
+      loss = loss / [dB_dt_std, dD_dt_std]
       loss = K.abs(loss)
       loss = K.sum(loss, axis=1) 
       return loss
@@ -164,7 +164,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
       y_train = y_all_train[1]
       X_val = X_all_val[1]
       y_val = y_all_val[1]
-      n_epochs = total_epochs*pct_lin
+      n_epochs = int(total_epochs*pct_lin)
       history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val),
                               batch_size = hp['batch_size'])
       
