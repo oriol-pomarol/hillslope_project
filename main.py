@@ -21,11 +21,11 @@ from modules.tipping_evolution import tipping_evolution
 print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
+sequential = False          # True or False
 model_training = 'all'      # False, 'rf', 'nn' or 'all'.
 model_evaluation = 'all'    # False, 'train', 'test', 'all'
 plots = ['surface']         # ['surface', 'colormesh', 'tipping']
 system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
-data_mode = 'sequential'      # 'combined', 'sequential', 'jumps' or 'linear'
 
 run_summary = "".join(['***MODULES***',
                        '\nmodel_training = {}'.format(model_training),
@@ -44,16 +44,16 @@ print('Successfully generated data...')
 
 # Prepare the data for training
 print('Formatting data...')
-data_summary, X_train, X_val, X_test, y_train, y_val, y_test = \
-  data_formatting(X_jumps, y_jumps, X_lin, y_lin, mode=data_mode)
+data_summary, X_train, X_val, X_test, y_train, y_val, y_test, w_train = \
+  data_formatting(X_jumps, y_jumps, X_lin, y_lin, sequential)
 run_summary += data_summary
 print('Successfully formatted data...')
 
 # Train the models if specified
 if model_training != False:
-  train_models(X_train, X_val, y_train, y_val,
+  train_models(X_train, X_val, y_train, y_val, w_train,
                mode=model_training,
-               sequential=(data_mode=='sequential'))
+               sequential=sequential)
 
 # Load the models
 nnetwork = load_model(os.path.join('data', 'nn_model.h5'), compile=False)

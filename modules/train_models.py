@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import os
 import joblib as jb
 
-def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
+def train_models(X_train, X_val, y_train, y_val, w_train, mode='all', sequential=False):
   
   # Store the list of data for sequential training
   X_all_train = X_train
@@ -18,7 +18,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
   X_all_val = X_val
   y_all_val = y_val
 
-  # Set the percentage of linear data to use for training
+  # Set the percentage of linear data epochs/trees to use for training
   pct_lin = 0.25
 
   if (mode=='rf' or mode=='all'):
@@ -39,7 +39,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
                                     min_samples_leaf = 2,
                                     min_samples_split = 20)
     train_rf_start = time.time()
-    rforest.fit(X_train, y_train)
+    rforest.fit(X_train, y_train, sample_weight=w_train)
 
     if sequential:
       # Continue training with the linear data
@@ -103,6 +103,8 @@ def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
       tuning_mask = np.random.choice([True, False], size = len(X_train), p = [tuning_size, 1-tuning_size])
       X_tuning = X_train[tuning_mask]
       y_tuning = y_train[tuning_mask]
+      if w_train is not None:
+        w_tuning = w_train[tuning_mask]
 
       for i, value in enumerate(tuning_hp_vals):
         print(f'Testing hp {i+1} of {len(tuning_hp_vals)}...')
@@ -120,7 +122,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
         nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
         train_nn_start = time.time()
         history = nnetwork.fit(X_tuning, y_tuning, epochs = n_epochs, validation_data = (X_val, y_val), 
-                              batch_size = hp['batch_size'])
+                              batch_size = hp['batch_size'], loss_weights = w_tuning)
         losses.append(history.history['val_loss'][-1])
         train_nn_end = time.time()
         train_nn_time = (train_nn_end - train_nn_start)/60
@@ -146,7 +148,7 @@ def train_models(X_train, X_val, y_train, y_val, mode='all', sequential=False):
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
     train_nn_start = time.time()
     history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val),
-                            batch_size = hp['batch_size'])
+                            batch_size = hp['batch_size'], loss_weights = w_train)
     
     # Plot the MSE history of the training
     plt.figure()

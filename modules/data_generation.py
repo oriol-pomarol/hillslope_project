@@ -152,7 +152,7 @@ def data_generation():
 
     # Generate a sequence with a quadratic g increase
     prob_disturbance = 0.001
-    strength_disturbance = 0.05
+    strength_disturbance = 0.01
     n_steps = int(1e6)
     g_inc = np.square(np.linspace(0, 2**0.5, n_steps))
     B_inc = np.ones_like(g_inc) * B_init
@@ -171,8 +171,8 @@ def data_generation():
 
         # Add a random chance to disturb the system
         if np.random.uniform(0, 1) < prob_disturbance:
-            B_inc[step] = np.clip(B_inc[step] + np.random.uniform(-1, 1)*strength_disturbance, 0.0, c)
-            D_inc[step] = np.clip(D_inc[step] + np.random.uniform(-1, 1)*strength_disturbance*0.1, 0.0, alpha)
+            B_inc[step] = np.clip(B_inc[step] + np.random.uniform(-1, 1)*strength_disturbance*c, 0.0, c)
+            D_inc[step] = np.clip(D_inc[step] + np.random.uniform(-1, 1)*strength_disturbance*alpha, 0.0, alpha)
             dB_dt_inc[step], dD_dt_inc[step] = dX_dt(B_inc[step], D_inc[step], g_inc[step])
             dist_mask[step-1] = True
 
