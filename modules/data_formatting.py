@@ -6,7 +6,7 @@ import matplotlib.ticker as tck
 def data_formatting(X_jumps, y_jumps, X_lin, y_lin, sequential=False):
 
   # Set the weights for the linear and jumps data
-  w_lin = 1       # between 0 and 1
+  w_lin = 0.8       # between 0 and 1
   w_train = None
 
   # Split the test data
@@ -46,13 +46,13 @@ def data_formatting(X_jumps, y_jumps, X_lin, y_lin, sequential=False):
 
     # Generate the weights for the linear and jumps data
     w_train = np.concatenate((w_lin*np.ones(len(X_lin_train))/len(X_lin_train),
-                             (1-w_lin)*np.ones(len(X_jumps_train)))/len(X_jumps_train))
-    
+                             (1-w_lin)*np.ones(len(X_jumps_train))/len(X_jumps_train)))
+
     # Shuffle the training data
     shuffle_mask =  np.random.shuffle(np.arange(len(X_train)))
-    X_train = X_train[shuffle_mask]
-    y_train = y_train[shuffle_mask]
-    w_train = w_train[shuffle_mask]
+    X_train = np.squeeze(X_train[shuffle_mask])
+    y_train = np.squeeze(y_train[shuffle_mask])
+    w_train = np.squeeze(w_train[shuffle_mask])
 
   elif w_lin == 0:
     # Use only the jumps data

@@ -19,7 +19,7 @@ def train_eval(rforest, nnetwork, X_train, y_train, X_val, y_val):
   else:
     return train_eval_single(rforest, nnetwork, X_train, y_train, X_val, y_val)
 
-def train_eval_single(rforest, nnetwork, X_train, y_train, X_val, y_val, iter):
+def train_eval_single(rforest, nnetwork, X_train, y_train, X_val, y_val, iter=0):
   # Evalute RF model on validation and training data
   print('Starting RF train set evaluation...')
   y_pred_train_for = rforest.predict(X_train)

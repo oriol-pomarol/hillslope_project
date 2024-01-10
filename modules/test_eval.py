@@ -18,7 +18,7 @@ def test_eval(nnetwork, rforest, X_test, y_test):
   else:
     return test_eval_single(rforest, nnetwork, X_test, y_test)
 
-def test_eval_single(rforest, nnetwork, X_test, y_test, iter=None):
+def test_eval_single(rforest, nnetwork, X_test, y_test, iter=0):
   print('Starting RF test set evaluation...')
   y_pred_for = rforest.predict(X_test)
   mse_for = mean_squared_error(y_test, y_pred_for)

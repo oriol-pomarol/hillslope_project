@@ -122,7 +122,7 @@ def train_models(X_train, X_val, y_train, y_val, w_train, mode='all', sequential
         nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
         train_nn_start = time.time()
         history = nnetwork.fit(X_tuning, y_tuning, epochs = n_epochs, validation_data = (X_val, y_val), 
-                              batch_size = hp['batch_size'], loss_weights = w_tuning)
+                              batch_size = hp['batch_size'], sample_weight = w_tuning)
         losses.append(history.history['val_loss'][-1])
         train_nn_end = time.time()
         train_nn_time = (train_nn_end - train_nn_start)/60
@@ -148,7 +148,7 @@ def train_models(X_train, X_val, y_train, y_val, w_train, mode='all', sequential
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
     train_nn_start = time.time()
     history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val),
-                            batch_size = hp['batch_size'], loss_weights = w_train)
+                            batch_size = hp['batch_size'], sample_weight = w_train)
     
     # Plot the MSE history of the training
     plt.figure()

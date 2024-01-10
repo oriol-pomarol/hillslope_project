@@ -18,6 +18,8 @@ def surface_plots(model, rforest):
     solid_lines = [] 
     lines = contour.allsegs[0]
     for line in lines:
+      if len(line) < 1:
+        continue
       indices = (np.array(line)//np.array([(B_lim+1E-5)/n_sq, (D_lim+1E-6)/n_sq])).astype(int)
       stability = grad_stab[indices[:,0], indices[:,1]]
       current_line = line[0]
