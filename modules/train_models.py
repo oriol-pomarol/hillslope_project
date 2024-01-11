@@ -203,7 +203,7 @@ def train_models(X_train, X_val, y_train, y_val, w_train, mode='all', sequential
   # Save the training summary
   if (mode=='rf' or mode=='all'):
     rf_summary = "".join(['\n\n***MODEL TRAINING***',
-                          '\n\nRANDOM FOREST',
+                          '\n\nRANDOM FOREST:',
                           '\ntrain_rf_time = {:.1f} minutes'.format(train_rf_time),
                           '\nn_estimators = {}'.format(rforest.get_params()['n_estimators']),
                           '\nmax_features = {}'.format(rforest.get_params()['max_features']),
@@ -212,7 +212,7 @@ def train_models(X_train, X_val, y_train, y_val, w_train, mode='all', sequential
                           '\nmin_samples_split = {}'.format(rforest.get_params()['min_samples_split']),
                           '\npct_lin = {}'.format(pct_lin) if sequential else ''])
   if (mode=='nn' or mode=='all'):
-    nn_summary = "".join(['\n\nNEURAL NETWORK',
+    nn_summary = "".join(['\n\nNEURAL NETWORK:',
                           '\ntrain_nn_time = {:.1f} minutes'.format(train_nn_time),
                           '\nloss_name = {}'.format(loss_name),
                           '\nn_epochs = {}'.format(total_epochs)])

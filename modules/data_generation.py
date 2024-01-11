@@ -1,5 +1,3 @@
-import os
-import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
@@ -23,9 +21,8 @@ def data_generation():
     n_years = 20000             # maximum number of years to run, default 20000
     dt = 0.5                    # time step, 7/365 in paper, default 0.5
     n_steps = int(n_years/dt)   # number of steps to run each simulation
-    prob_new_B = 0.01           # probability of setting a new random B value
-    prob_new_D = 0.01           # probability of setting a new random D value
-    prob_new_g = 0.001           # probability of setting a new random g value
+    prob_new_state = 0.02       # probability of setting a new system state
+    prob_new_g = 0.001          # probability of setting a new random g value
 
     # Generate the time sequence
     t = np.linspace(0, n_years, n_steps)
@@ -59,14 +56,10 @@ def data_generation():
         g_jumps[step] = g_jumps[step-1]
 
         # Add a random chance to set a new random B value
-        jump_B = np.random.choice([True, False], size=len(B_jumps[step]), p=[prob_new_B, 1 - prob_new_B])
-        B_jumps[step][jump_B] = np.random.uniform(0, c, size=len(B_jumps[step][jump_B]))
-        jumps_mask[step-1][jump_B] = True
-
-        # Add a random chance to set a new random D value
-        jump_D = np.random.choice([True, False], size=len(D_jumps[step]), p=[prob_new_D, 1 - prob_new_D])
-        D_jumps[step][jump_D] = np.random.uniform(0, alpha, size=len(D_jumps[step][jump_D]))
-        jumps_mask[step-1][jump_D] = True
+        jump_state = np.random.choice([True, False], size=len(B_jumps[step]), p=[prob_new_state, 1 - prob_new_state])
+        B_jumps[step][jump_state] = np.random.uniform(0, c, size=len(B_jumps[step][jump_state]))
+        D_jumps[step][jump_state] = np.random.uniform(0, alpha, size=len(D_jumps[step][jump_state]))
+        jumps_mask[step-1][jump_state] = True
 
         # Add a random chance to set a new random g value
         jump_g = np.random.choice([True, False], size=len(g_jumps[step]), p=[prob_new_g, 1 - prob_new_g])
@@ -125,7 +118,8 @@ def data_generation():
     X_jumps_filtered = [np.compress(train_mask_jumps[i], X_jumps[i], axis=0) for i in range(n_sim)]
     y_jumps_filtered = [np.compress(train_mask_jumps[i], y_jumps[i], axis=0) for i in range(n_sim)]
 
-    print(f"Final jump data size: {np.sum([len(X_jumps_filtered[i]) for i in range(n_sim)])}")
+    X_jumps_size = np.sum([len(X_jumps_filtered[i]) for i in range(n_sim)])
+    print(f"Final jump data size: {X_jumps_size}")
     
     # Start the system anew for the g_increase training data
 
@@ -231,14 +225,15 @@ def data_generation():
                            '\nn_sim = {}'.format(n_sim),
                            '\nn_years = {}'.format(n_years),
                            '\ndt = {}'.format(dt),
-                           '\nprob_new_B = {}'.format(prob_new_B),
-                           '\nprob_new_D = {}'.format(prob_new_D),
+                           '\nprob_new_state = {}'.format(prob_new_state),
                            '\nprob_new_g = {}'.format(prob_new_g),
-                           '\n\nLINEAR DATA:',
+                           '\nfinal_jumps_size = {}'.format(X_jumps_size),
+                           '\n\nEQUILIBRIUM DATA:',
                            '\nB_init = {}'.format(B_init),
                            '\nD_init = {}'.format(D_init),
                            '\nn_steps = {}'.format(n_steps),
                            '\nprob_disturbance = {}'.format(prob_disturbance),
-                           '\nstrength_disturbance = {}'.format(strength_disturbance)])
+                           '\nstrength_disturbance = {}'.format(strength_disturbance),
+                           '\nfinal_eq_size = {}'.format(len(X_inc))])
 
     return gen_summary, X_jumps_filtered, y_jumps_filtered, X_inc, y_inc

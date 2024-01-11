@@ -45,7 +45,7 @@ def surface_plots(model, rforest):
   scale_surface = 10
   n_sq = 18 * scale_surface
   B_lim = 3
-  D_lim = 0.5
+  D_lim = 0.4
   g_plot = 1.76 #1.76
 
   # Make a grid of B and D values
