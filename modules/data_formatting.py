@@ -3,7 +3,10 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 
-def data_formatting(X_jp, y_jp, X_eq, y_eq, sequential=False):
+def data_formatting(jp_eq_data, sequential=False):
+
+  # Unpack the data
+  X_jp, y_jp, X_eq, y_eq = jp_eq_data
 
   # Set the weights for the equilibrium and jumps data
   w_eq = 0.5       # between 0 and 1
@@ -12,7 +15,7 @@ def data_formatting(X_jp, y_jp, X_eq, y_eq, sequential=False):
   # Split the test data
   test_size = 0.2
 
-  # Split the g_increase data between testing and the rest
+  # Split the equilibrium data between testing and the rest
   X_eq_train, X_eq_test, y_eq_train, y_eq_test = \
     train_test_split(X_eq, y_eq, test_size=test_size,
                      shuffle=True, random_state=10)
@@ -45,16 +48,9 @@ def data_formatting(X_jp, y_jp, X_eq, y_eq, sequential=False):
     y_val = np.concatenate((y_eq_val, y_jp_val))
 
     # Generate the weights for the equilibrium and jumps data
-    length_ratio = len(X_eq_train)/len(X_jp_train)
+    length_ratio = len(X_jp_train)/len(X_eq_train)
     w_train = np.concatenate((w_eq*np.ones(len(X_eq_train))*length_ratio,
                              (1-w_eq)*np.ones(len(X_jp_train))))
-    
-    # Shuffle the training data
-    shuffled_indices = np.arange(len(X_train))
-    np.random.shuffle(shuffled_indices)
-    X_train = np.squeeze(X_train[shuffled_indices])
-    y_train = np.squeeze(y_train[shuffled_indices])
-    w_train = np.squeeze(w_train[shuffled_indices])
 
   elif w_eq == 0:
     # Use only the jumps data
@@ -114,4 +110,5 @@ def data_formatting(X_jp, y_jp, X_eq, y_eq, sequential=False):
                           '\ndrop_size = {}'.format(drop_size),
                           '\nfinal_train_size = {}'.format(final_train_size)])
 
-  return data_summary, X_train, X_val, X_test, y_train, y_val, y_test, w_train
+  return data_summary, [X_train, X_val, y_train, y_val], [X_test, y_test] \
+    [w_train, len(X_eq_train)]

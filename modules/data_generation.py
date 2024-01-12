@@ -236,4 +236,4 @@ def data_generation():
                            '\nstrength_disturbance = {}'.format(strength_disturbance),
                            '\nfinal_eq_size = {}'.format(len(X_eq))])
 
-    return gen_summary, X_jp_filtered, y_jp_filtered, X_eq, y_eq
+    return gen_summary, [X_jp_filtered, y_jp_filtered, X_eq, y_eq]

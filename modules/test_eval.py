@@ -4,7 +4,11 @@ from matplotlib import colors
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
-def test_eval(nnetwork, rforest, X_test, y_test):
+def test_eval(nnetwork, rforest, test_data):
+
+  # Unpack the data
+  X_test, y_test = test_data
+  
   # Check if the input is a list of datasets
   if isinstance(X_test, list):
     rf_sum = ''

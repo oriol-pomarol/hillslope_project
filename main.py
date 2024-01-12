@@ -38,22 +38,21 @@ start_time = time.time()
 
 # Load and preprocess/generate the data
 print('Generating data...')
-gen_summary, X_jumps, y_jumps, X_lin, y_lin = data_generation()
+gen_summary, jp_eq_data = data_generation()
 run_summary += gen_summary
 print('Successfully generated data...')
 
 # Prepare the data for training
 print('Formatting data...')
-data_summary, X_train, X_val, X_test, y_train, y_val, y_test, w_train = \
-  data_formatting(X_jumps, y_jumps, X_lin, y_lin, sequential)
+data_summary, train_val_data, test_data, add_train_vars = \
+  data_formatting(jp_eq_data, sequential)
 run_summary += data_summary
 print('Successfully formatted data...')
 
 # Train the models if specified
 if model_training != False:
-  train_models(X_train, X_val, y_train, y_val, w_train,
-               mode=model_training,
-               sequential=sequential)
+  train_models(train_val_data, add_train_vars,
+               model_training, sequential)
 
 # Load the models
 nnetwork = load_model(os.path.join('data', 'nn_model.h5'), compile=False)
@@ -72,13 +71,13 @@ with open(os.path.join('data','train_summary.pkl'), 'rb') as f:
 
 # Evaluate the training data specified in model_evaluation
 if (model_evaluation=='train' or model_evaluation=='all'):
-  train_summary = train_eval(rforest, nnetwork, X_train, y_train, X_val, y_val)
+  train_summary = train_eval(rforest, nnetwork, train_val_data)
   rf_summary += train_summary[0]
   nn_summary += train_summary[1]
 
 # Evaluate the test data if set to True
 if (model_evaluation=='test' or model_evaluation=='all'):
-  test_summary = test_eval(nnetwork, rforest, X_test, y_test)
+  test_summary = test_eval(nnetwork, rforest, test_data)
   rf_summary += test_summary[0]
   nn_summary += test_summary[1]
 
@@ -92,7 +91,7 @@ if 'surface' in plots:
 
 # Plot colormeshes related to the observations available if in the plots list
 if 'colormesh' in plots:
-  run_summary += colormesh_plots(X_train, y_train)
+  run_summary += colormesh_plots(train_val_data)
 
 # Plot the system evolutionat the tipping point if in the plots list
 if 'tipping' in plots:

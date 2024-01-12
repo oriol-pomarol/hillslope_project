@@ -4,7 +4,10 @@ from matplotlib.colors import LogNorm
 import pandas as pd
 import matplotlib.ticker as tck
 
-def colormesh_plots(X_train, y_train):
+def colormesh_plots(train_val_data):
+
+  # Unpack the data
+  X_train, y_train, _, _ = train_val_data
 
   # Set the parameters
   n_bins = 24
