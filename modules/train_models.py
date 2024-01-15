@@ -9,6 +9,7 @@ from keras import backend as K
 import matplotlib.pyplot as plt
 import os
 import joblib as jb
+from .data_formatting import subset_mask_stratified
 
 def train_models(train_val_data, add_train_vars=[None]*2,
                  mode='all', sequential=False):
@@ -100,19 +101,21 @@ def train_models(train_val_data, add_train_vars=[None]*2,
       y_val = y_all_val[0]
 
     # Define what hyperparameter to tune and its values
-    tuning_hp_name = 'l1_reg'
-    tuning_hp_vals = []
-
-    # Add the hyperparameter values and loss to the additonal training variables
-    add_train_vars.append(hp)
-    add_train_vars.append(custom_mae)
+    tuning_hp_name = 'w_eq'
+    tuning_hp_vals = [i/10 for i in range(1,10)]
 
     if tuning_hp_vals:
       print('Starting hyperparameter tuning...')
-      best_hp = hp_tuning(train_val_data, add_train_vars,
+      best_hp = hp_tuning(train_val_data, add_train_vars, hp, custom_mae,
                           tuning_hp_name, tuning_hp_vals)
       # Apply the best hyperparameter
-      hp[tuning_hp_name] = best_hp # Example only!!
+      if tuning_hp_name == 'w_eq':
+        # Generate the weights for the equilibrium and jumps data
+        length_ratio = len_eq_train/(len(X_train) - len_eq_train)
+        w_train = np.concatenate((best_hp*np.ones(len_eq_train)*length_ratio,
+                                  (1-best_hp)*np.ones(len(X_train) - len_eq_train)))
+      else:
+        hp[tuning_hp_name] = best_hp
       print('Successfully tuned hyperparameters.')
 
     # Define the model
@@ -202,25 +205,19 @@ def train_models(train_val_data, add_train_vars=[None]*2,
 
   return
 
-def hp_tuning(train_val_data, add_train_vars, tuning_hp_name, tuning_hp_vals):
+def hp_tuning(train_val_data, add_train_vars, hp, loss, tuning_hp_name, tuning_hp_vals):
 
   # Unpack the data
   X_train, X_val, y_train, y_val = train_val_data
-  w_train, len_eq_train, hp, loss = add_train_vars
+  w_train, len_eq_train = add_train_vars
 
   # Create empty lists to store the losses
   losses = []
 
   # Make a mask to subset of the data for tuning, conserving the eq/jp ratio
   tuning_factor = 0.1
-  len_eq_tuning = int(tuning_factor*len_eq_train)
-  len_jp_tuning = int(tuning_factor*(len(X_train) - len_eq_train))
-  tuning_mask_eq = np.concatenate((np.ones(len_eq_tuning), np.zeros(len_eq_train - len_eq_tuning)))
-  tuning_mask_jp = np.concatenate((np.ones(len_jp_tuning), np.zeros(len(X_train) - len_eq_train - len_jp_tuning)))
-  tuning_mask_eq = np.random.permutation(tuning_mask_eq)
-  tuning_mask_jp = np.random.permutation(tuning_mask_jp)
-  tuning_mask = np.concatenate((tuning_mask_eq, tuning_mask_jp))
-  tuning_mask = tuning_mask.astype(bool)
+  tuning_mask, len_eq_tuning, len_jp_tuning = \
+    subset_mask_stratified(tuning_factor, len(X_train), len_eq_train)
 
   # Subset the data for tuning
   X_tuning = X_train[tuning_mask]
@@ -236,7 +233,7 @@ def hp_tuning(train_val_data, add_train_vars, tuning_hp_name, tuning_hp_vals):
     if tuning_hp_name == 'w_eq':
       # Generate the weights for the equilibrium and jumps data
       length_ratio = len_jp_tuning/len_eq_tuning
-      w_train = np.concatenate((value*np.ones(len_eq_tuning)*length_ratio,
+      w_tuning = np.concatenate((value*np.ones(len_eq_tuning)*length_ratio,
                                 (1-value)*np.ones(len_jp_tuning)))
     else:
       hp[tuning_hp_name] = value

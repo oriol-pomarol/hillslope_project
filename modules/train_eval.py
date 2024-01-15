@@ -7,7 +7,7 @@ from sklearn.metrics import r2_score
 def train_eval(rforest, nnetwork, train_val_data):
 
   # Unpack the data
-  X_train, y_train, X_val, y_val = train_val_data
+  X_train, X_val, y_train, y_val = train_val_data
   # Check if the input is a list of datasets
   if isinstance(X_train, list):
     rf_sum = ''

@@ -10,7 +10,6 @@ def data_formatting(jp_eq_data, sequential=False):
 
   # Set the weights for the equilibrium and jumps data
   w_eq = 0.5       # between 0 and 1
-  w_train = None
 
   # Split the test data
   test_size = 0.2
@@ -83,11 +82,14 @@ def data_formatting(jp_eq_data, sequential=False):
   drop_size = 0
 
   if drop_size > 0 and not sequential:
-    drop_mask = np.random.choice([True, False], size = len(X_train), p = [1-drop_size, drop_size])
+    drop_mask, len_eq_train, _ = subset_mask_stratified(1-drop_size, len(X_train), len(X_eq_train))
     X_train = X_train[drop_mask]
     y_train = y_train[drop_mask]
     if w_train is not None:
       w_train = w_train[drop_mask] 
+    drop_mask, _, _ = subset_mask_stratified(1-drop_size, len(X_val), len(X_eq_val))
+    X_val = X_val[drop_mask]
+    y_val = y_val[drop_mask]
 
   elif drop_size > 0 and sequential:
     for i in range(len(X_train)):
@@ -109,6 +111,19 @@ def data_formatting(jp_eq_data, sequential=False):
                           '\nval_size = {}'.format(val_size),
                           '\ndrop_size = {}'.format(drop_size),
                           '\nfinal_train_size = {}'.format(final_train_size)])
+  add_train_vars = [w_train, len_eq_train] if (w_eq<1 and w_eq>0) else [None]*2
+  return data_summary, [X_train, X_val, y_train, y_val], [X_test, y_test], \
+    add_train_vars
 
-  return data_summary, [X_train, X_val, y_train, y_val], [X_test, y_test] \
-    [w_train, len(X_eq_train)]
+def subset_mask_stratified(subset_factor, total_len, first_group_len):
+  if first_group_len is None:
+    first_group_len = total_len
+  first_subset_len = int(subset_factor*first_group_len)
+  second_subset_len = int(subset_factor*total_len) - first_subset_len
+  subset_mask_first = np.concatenate((np.ones(first_subset_len), np.zeros(first_group_len - first_subset_len)))
+  subset_mask_second = np.concatenate((np.ones(second_subset_len), np.zeros(total_len - first_group_len - second_subset_len)))
+  subset_mask_first = np.random.permutation(subset_mask_first)
+  subset_mask_second = np.random.permutation(subset_mask_second)
+  subset_mask = np.concatenate((subset_mask_first, subset_mask_second))
+  subset_mask = subset_mask.astype(bool)
+  return subset_mask, first_subset_len, second_subset_len
