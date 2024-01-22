@@ -47,7 +47,8 @@ def data_formatting(jp_eq_data, sequential=False):
     y_val = np.concatenate((y_eq_val, y_jp_val))
 
     # Generate the weights for the equilibrium and jumps data
-    length_ratio = len(X_jp_train)/len(X_eq_train)
+    len_eq_train = len(X_eq_train)
+    length_ratio = len(X_jp_train)/len_eq_train
     w_train = np.concatenate((w_eq*np.ones(len(X_eq_train))*length_ratio,
                              (1-w_eq)*np.ones(len(X_jp_train))))
 
