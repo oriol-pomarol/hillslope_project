@@ -21,7 +21,6 @@ from modules.tipping_evolution import tipping_evolution
 print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
-sequential = False          # True or False
 model_training = 'all'      # False, 'rf', 'nn' or 'all'.
 model_evaluation = 'all'    # False, 'train', 'test', 'all'
 plots = ['surface']         # ['surface', 'colormesh', 'tipping']
@@ -45,14 +44,14 @@ print('Successfully generated data...')
 # Prepare the data for training
 print('Formatting data...')
 data_summary, train_val_data, test_data, add_train_vars = \
-  data_formatting(jp_eq_data, sequential)
+  data_formatting(jp_eq_data)
 run_summary += data_summary
 print('Successfully formatted data...')
 
 # Train the models if specified
 if model_training != False:
   train_models(train_val_data, add_train_vars,
-               model_training, sequential)
+               model_training)
 
 # Load the models
 nnetwork = load_model(os.path.join('data', 'nn_model.h5'), compile=False)

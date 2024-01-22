@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 
-def data_formatting(jp_eq_data, sequential=False):
+def data_formatting(jp_eq_data):
 
   # Unpack the data
   X_jp, y_jp, X_eq, y_eq = jp_eq_data
@@ -69,20 +69,11 @@ def data_formatting(jp_eq_data, sequential=False):
     y_test = y_eq_test
     X_val = X_eq_val
     y_val = y_eq_val
-
-  elif sequential:
-    # Store both equilibrium and jumps data in a list
-    X_train = [X_jp_train, X_eq_train]
-    y_train = [y_jp_train, y_eq_train]
-    X_test = [X_jp_test, X_eq_test]
-    y_test = [y_jp_test, y_eq_test]
-    X_val = [X_jp_val, X_eq_val]
-    y_val = [y_jp_val, y_eq_val]
   
   # Drop a percentage of the training data for better performance
   drop_size = 0
 
-  if drop_size > 0 and not sequential:
+  if drop_size > 0:
     drop_mask, len_eq_train, _ = subset_mask_stratified(1-drop_size, len(X_train), len(X_eq_train))
     X_train = X_train[drop_mask]
     y_train = y_train[drop_mask]
@@ -92,21 +83,13 @@ def data_formatting(jp_eq_data, sequential=False):
     X_val = X_val[drop_mask]
     y_val = y_val[drop_mask]
 
-  elif drop_size > 0 and sequential:
-    for i in range(len(X_train)):
-      drop_mask = np.random.choice([True, False], size = len(X_train[i]), p = [1-drop_size, drop_size])
-      X_train[i] = X_train[i][drop_mask]
-      y_train[i] = y_train[i][drop_mask]
-
   # Calculate the final training set size
-  final_train_size = sum([x.shape[0] for x in X_train]) if sequential \
-    else X_train.shape[0]
+  final_train_size = X_train.shape[0]
   print('Dropped {:.1f}% of the training data.'.format(100*drop_size))
   print('Final training set size: {}'.format(final_train_size))
   
   # Add the data characteristics to the summary
   data_summary = "".join(['\n\n***DATA FORMATTING***',
-                          '\nsequential = {}'.format(sequential),
                           '\nw_eq = {}'.format(w_eq),
                           '\ntest_size = {}'.format(test_size),
                           '\nval_size = {}'.format(val_size),

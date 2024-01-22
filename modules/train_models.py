@@ -12,7 +12,7 @@ import joblib as jb
 from .data_formatting import subset_mask_stratified
 
 def train_models(train_val_data, add_train_vars=[None]*2,
-                 mode='all', sequential=False):
+                 mode='all'):
 
   # Unpack the data
   X_train, X_val, y_train, y_val = train_val_data
@@ -24,12 +24,6 @@ def train_models(train_val_data, add_train_vars=[None]*2,
     # X_train = np.squeeze(X_train[shuffled_indices])
     # y_train = np.squeeze(y_train[shuffled_indices])
     # w_train = np.squeeze(w_train[shuffled_indices])
-  
-  # Store the list of data for sequential training
-  X_all_train = X_train
-  y_all_train = y_train
-  X_all_val = X_val
-  y_all_val = y_val
 
   # Set the percentage of linear data epochs/trees to use for training
   pct_lin = 0.25
@@ -37,14 +31,7 @@ def train_models(train_val_data, add_train_vars=[None]*2,
   if (mode=='rf' or mode=='all'):
     # Start the random forest model training
     print('Starting Random Forest training...')
-    total_estimators = 200
-    n_estimators = int(total_estimators*(1-pct_lin)) if sequential \
-      else total_estimators
-
-    # If training sequentially, begin training with only the jumps data
-    if sequential:
-      X_train = X_all_train[0]
-      y_train = y_all_train[0]
+    n_estimators = 200
 
     rforest = RandomForestRegressor(n_estimators = n_estimators,
                                     max_features = 'sqrt',
@@ -53,13 +40,6 @@ def train_models(train_val_data, add_train_vars=[None]*2,
                                     min_samples_split = 20)
     train_rf_start = time.time()
     rforest.fit(X_train, y_train, sample_weight=w_train)
-
-    if sequential:
-      # Continue training with the linear data
-      X_train = X_all_train[1]
-      y_train = y_all_train[1]
-      rforest.set_params(n_estimators = total_estimators, warm_start = True)
-      rforest.fit(X_train, y_train)
 
     train_rf_end = time.time()
     train_rf_time = (train_rf_end - train_rf_start)/60
@@ -91,14 +71,6 @@ def train_models(train_val_data, add_train_vars=[None]*2,
     # Set the hyperparameters
     hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu',
           'learning_rate':1E-5, 'batch_size':128, 'l1_reg':1e-5, 'n_epochs':200}
-    n_epochs = int(hp['n_epochs']*(1-pct_lin)) if sequential else hp['n_epochs']
-    
-    # If training sequentially, begin training/tuning with jumps data
-    if sequential:
-      X_train = X_all_train[0]
-      y_train = y_all_train[0]
-      X_val = X_all_val[0]
-      y_val = y_all_val[0]
 
     # Define what hyperparameter to tune and its values
     tuning_hp_name = 'w_eq'
@@ -128,7 +100,7 @@ def train_models(train_val_data, add_train_vars=[None]*2,
     # Compile and fit the model
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
     train_nn_start = time.time()
-    history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val),
+    history = nnetwork.fit(X_train, y_train, epochs = hp['n_epochs'], validation_data = (X_val, y_val),
                             batch_size = hp['batch_size'], sample_weight = w_train)
     
     # Plot the MSE history of the training
@@ -140,26 +112,6 @@ def train_models(train_val_data, add_train_vars=[None]*2,
     plt.xlabel('Epoch')
     plt.ylabel('Custom MSE')
     plt.savefig(os.path.join('results','training_history.png'))
-
-    if sequential:
-      # Continue training with the linear data
-      X_train = X_all_train[1]
-      y_train = y_all_train[1]
-      X_val = X_all_val[1]
-      y_val = y_all_val[1]
-      n_epochs = int(hp['n_epochs']*pct_lin)
-      history = nnetwork.fit(X_train, y_train, epochs = n_epochs, validation_data = (X_val, y_val),
-                              batch_size = hp['batch_size'])
-      
-      # Plot the MSE history of the training
-      plt.figure()
-      plt.plot(history.history['loss'], label='loss')
-      plt.plot(history.history['val_loss'], label='val_loss')
-      plt.yscale('log')
-      plt.legend()
-      plt.xlabel('Epoch')
-      plt.ylabel('Custom MSE')
-      plt.savefig(os.path.join('results','training_history_v2.png'))
 
     train_nn_end = time.time()
     train_nn_time = (train_nn_end - train_nn_start)/60
@@ -190,8 +142,7 @@ def train_models(train_val_data, add_train_vars=[None]*2,
                           '\nmax_features = {}'.format(rforest.get_params()['max_features']),
                           '\nmax_samples = {}'.format(rforest.get_params()['max_samples']),
                           '\nmin_samples_leaf = {}'.format(rforest.get_params()['min_samples_leaf']),
-                          '\nmin_samples_split = {}'.format(rforest.get_params()['min_samples_split']),
-                          '\npct_lin = {}'.format(pct_lin) if sequential else ''])
+                          '\nmin_samples_split = {}'.format(rforest.get_params()['min_samples_split'])])
   if (mode=='nn' or mode=='all'):
     nn_summary = "".join(['\n\nNEURAL NETWORK:',
                           '\ntrain_nn_time = {:.1f} minutes'.format(train_nn_time),
