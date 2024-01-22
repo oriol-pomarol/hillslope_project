@@ -11,29 +11,24 @@ import os
 import joblib as jb
 from .data_formatting import subset_mask_stratified
 
-def train_models(train_val_data, add_train_vars=[None]*2,
+def train_models(train_val_data, add_train_vars=[None]*3,
                  mode='all'):
 
   # Unpack the data
   X_train, X_val, y_train, y_val = train_val_data
-  w_train, len_eq_train = add_train_vars
+  w_train, len_eq_train, len_eq_val = add_train_vars
 
-    # # Shuffle the training data
-    # shuffled_indices = np.arange(len(X_train))
-    # np.random.shuffle(shuffled_indices)
-    # X_train = np.squeeze(X_train[shuffled_indices])
-    # y_train = np.squeeze(y_train[shuffled_indices])
-    # w_train = np.squeeze(w_train[shuffled_indices])
-
-  # Set the percentage of linear data epochs/trees to use for training
-  pct_lin = 0.25
+  # # Shuffle the training data
+  # shuffled_indices = np.arange(len(X_train))
+  # np.random.shuffle(shuffled_indices)
+  # X_train = np.squeeze(X_train[shuffled_indices])
+  # y_train = np.squeeze(y_train[shuffled_indices])
+  # w_train = np.squeeze(w_train[shuffled_indices])
 
   if (mode=='rf' or mode=='all'):
     # Start the random forest model training
     print('Starting Random Forest training...')
-    n_estimators = 200
-
-    rforest = RandomForestRegressor(n_estimators = n_estimators,
+    rforest = RandomForestRegressor(n_estimators = 200,
                                     max_features = 'sqrt',
                                     max_samples = 0.4,
                                     min_samples_leaf = 2,
@@ -100,13 +95,28 @@ def train_models(train_val_data, add_train_vars=[None]*2,
     # Compile and fit the model
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
     train_nn_start = time.time()
-    history = nnetwork.fit(X_train, y_train, epochs = hp['n_epochs'], validation_data = (X_val, y_val),
-                            batch_size = hp['batch_size'], sample_weight = w_train)
+
+    # Add the separate validation sets if they are provided
+    if len_eq_val is None:
+      history = nnetwork.fit(X_train, y_train, epochs = hp['n_epochs'], validation_data = (X_val, y_val),
+                               batch_size = hp['batch_size'], sample_weight = w_train)
+    else:
+      X_val_eq = X_val[:len_eq_val]
+      y_val_eq = y_val[:len_eq_val]
+      X_val_jp = X_val[len_eq_val:]
+      y_val_jp = y_val[len_eq_val:]
+      history = AdditionalValidationSets([(X_val_eq, y_val_eq, 'val_loss_eq'), (X_val_jp, y_val_jp, 'val_loss_jp')])
+      nnetwork.fit(X_train, y_train, epochs = hp['n_epochs'], validation_data = (X_val, y_val),
+                   batch_size = hp['batch_size'], sample_weight = w_train, callbacks=[history])
+    
+    # Save the history as a pandas dataframe
+    history_df = pd.DataFrame(history.history)
+    history_df.to_csv(os.path.join('results','training_history.csv'))
     
     # Plot the MSE history of the training
     plt.figure()
-    plt.plot(history.history['loss'], label='loss')
-    plt.plot(history.history['val_loss'], label='val_loss')
+    for key in history.history.keys():
+      plt.plot(history_df[key], label=key)
     plt.yscale('log')
     plt.legend()
     plt.xlabel('Epoch')
@@ -117,8 +127,6 @@ def train_models(train_val_data, add_train_vars=[None]*2,
     train_nn_time = (train_nn_end - train_nn_start)/60
     print('NN training time: {:.3g} minutes.'.format(train_nn_time))
 
-    df = pd.DataFrame({'loss':history.history['loss'], 'val_loss':history.history['val_loss']})
-    df.to_csv(os.path.join('results','training_history.csv'))
     nnetwork.save(os.path.join('data', 'nn_model.h5'))
     print('Successfully completed Neural Network training.')
 
@@ -160,10 +168,12 @@ def hp_tuning(train_val_data, add_train_vars, hp, loss, tuning_hp_name, tuning_h
 
   # Unpack the data
   X_train, X_val, y_train, y_val = train_val_data
-  w_train, len_eq_train = add_train_vars
+  w_train, len_eq_train, len_eq_val = add_train_vars
 
   # Create empty lists to store the losses
   losses = []
+  losses_eq = []
+  losses_jp = []
 
   # Make a mask to subset of the data for tuning, conserving the eq/jp ratio
   tuning_factor = 0.1
@@ -201,12 +211,88 @@ def hp_tuning(train_val_data, add_train_vars, hp, loss, tuning_hp_name, tuning_h
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=loss)
     history = nnetwork.fit(X_tuning, y_tuning, epochs = hp['n_epochs'], validation_data = (X_val, y_val), 
                           batch_size = hp['batch_size'], sample_weight = w_tuning)
+    
+    if len_eq_val is not None:
+      # Split the validation loss into equilibrium and jumps
+      X_val_eq = X_val[:len_eq_val]
+      y_val_eq = y_val[:len_eq_val]
+      X_val_jp = X_val[len_eq_val:]
+      y_val_jp = y_val[len_eq_val:]
+
+      # Evaluate the model on the validation sets
+      val_loss_eq = nnetwork.evaluate(X_val_eq, y_val_eq)
+      val_loss_jp = nnetwork.evaluate(X_val_jp, y_val_jp)
+      losses_eq.append(val_loss_eq)
+      losses_jp.append(val_loss_jp)
+
     losses.append(history.history['val_loss'][-1])
 
   # Save a csv with each model's loss and hp
-  pd.DataFrame({'loss':losses, tuning_hp_name:tuning_hp_vals}).to_csv(os.path.join('results','hp_tuning.csv'))
+  tuning_res_dict = {tuning_hp_name:tuning_hp_vals, 'loss':losses}
+  if len_eq_val is not None:
+    tuning_res_dict['loss_eq'] = losses_eq
+    tuning_res_dict['loss_jp'] = losses_jp
+  pd.DataFrame(tuning_res_dict).to_csv(os.path.join('results','hp_tuning.csv'))
 
   # Select the best hyperparameter and retrain the model
   best_hp = tuning_hp_vals[np.argmin(losses)]
   print('Best model has {} = {:.1g}.'.format(tuning_hp_name, best_hp))
   return best_hp
+
+# Source: https://stackoverflow.com/questions/47731935/using-multiple-validation-sets-with-keras
+# Should rewrite this for my specific problem
+from keras.callbacks import Callback
+class AdditionalValidationSets(Callback):
+    def __init__(self, validation_sets, verbose=0, batch_size=None):
+        """
+        :param validation_sets:
+        a list of 3-tuples (validation_data, validation_targets, validation_set_name)
+        or 4-tuples (validation_data, validation_targets, sample_weights, validation_set_name)
+        :param verbose:
+        verbosity mode, 1 or 0
+        :param batch_size:
+        batch size to be used when evaluating on the additional datasets
+        """
+        super(AdditionalValidationSets, self).__init__()
+        self.validation_sets = validation_sets
+        for validation_set in self.validation_sets:
+            if len(validation_set) not in [3, 4]:
+                raise ValueError()
+        self.epoch = []
+        self.history = {}
+        self.verbose = verbose
+        self.batch_size = batch_size
+
+    def on_train_begin(self, logs=None):
+        self.epoch = []
+        self.history = {}
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        self.epoch.append(epoch)
+
+        # record the same values as History() as well
+        for k, v in logs.items():
+            self.history.setdefault(k, []).append(v)
+
+        # evaluate on the additional validation sets
+        for validation_set in self.validation_sets:
+            if len(validation_set) == 3:
+                validation_data, validation_targets, validation_set_name = validation_set
+                sample_weights = None
+            elif len(validation_set) == 4:
+                validation_data, validation_targets, sample_weights, validation_set_name = validation_set
+            else:
+                raise ValueError()
+
+            results = self.model.evaluate(x=validation_data,
+                                          y=validation_targets,
+                                          verbose=self.verbose,
+                                          sample_weight=sample_weights,
+                                          batch_size=self.batch_size)
+            if isinstance(results, float):
+                results = [results]  # Convert single float to a list
+
+            for metric, result in zip(self.model.metrics_names,results):
+                valuename = validation_set_name + '_' + metric
+                self.history.setdefault(valuename, []).append(result)
