@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import os
 import joblib as jb
 from .data_formatting import subset_mask_stratified
+from .surface_plots import surface_plots
 
 def train_models(train_val_data, add_train_vars=[None]*3,
                  mode='all'):
@@ -211,6 +212,9 @@ def hp_tuning(train_val_data, add_train_vars, hp, loss, tuning_hp_name, tuning_h
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=loss)
     history = nnetwork.fit(X_tuning, y_tuning, epochs = hp['n_epochs'], validation_data = (X_val, y_val), 
                           batch_size = hp['batch_size'], sample_weight = w_tuning)
+    
+    # Make a surface plot of the model
+    surface_plots(nnetwork, name=f'{tuning_hp_name}_{value}')
     
     if len_eq_val is not None:
       # Split the validation loss into equilibrium and jumps

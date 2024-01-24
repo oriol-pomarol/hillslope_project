@@ -86,7 +86,8 @@ run_summary += nn_summary
 
 # Plot the predicted rate of change for B and D at critical g if in the plots list
 if 'surface' in plots:
-  run_summary += surface_plots(nnetwork, rforest)
+  run_summary += surface_plots(nnetwork, name='nn')
+  surface_plots(rforest, name='rf')
 
 # Plot colormeshes related to the observations available if in the plots list
 if 'colormesh' in plots:
