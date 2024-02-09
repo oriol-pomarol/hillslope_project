@@ -9,8 +9,7 @@ from sklearn.ensemble import RandomForestRegressor
 import os
 import joblib as jb
 from keras.models import load_model
-from modules.data_generation import data_generation
-from modules.data_formatting import minimal_data_formatting, detailed_data_formatting
+from modules.data_preparation import data_preparation
 from modules.train_models import train_models
 from modules.test_eval import test_eval
 from modules.train_eval import train_eval
@@ -18,53 +17,24 @@ from modules.system_evolution import system_evolution
 from modules.surface_plots import surface_plots
 from modules.colormesh_plots import colormesh_plots
 from modules.tipping_evolution import tipping_evolution
+from config import general as cfg
 print('Successfully imported libraries and modules.')
-
-# Set which functionalities to use
-data = 'detailed'                            # 'detailed' or 'minimal'
-model_training = 'all'                       # False, 'rf', 'nn' or 'all'.
-model_evaluation = 'all'                     # False, 'train', 'test', 'all'
-plots = ['surface']                          # ['surface', 'colormesh', 'tipping']
-system_ev = []                               # [0,1,2,...,'val_data_sin','val_data_lin']
-
-run_summary = "".join(['***MODULES***',
-                       '\nmodel_training = {}'.format(model_training),
-                       '\nmodel_evaluation = {}'.format(model_evaluation),
-                       '\nsystem_ev = {}'.format(system_ev),
-                       '\nplots = {}'.format(plots)])
 
 # Record starting run time
 start_time = time.time()
 
-if data == 'minimal':
-  # Load and preprocess/generate the data
-  print('Generating data...')
-  gen_summary, jp_eq_data = data_generation()
-  run_summary += gen_summary
-  print('Successfully generated data...')
+# Initialize the summary
+run_summary = ""
 
-  # Prepare the data for training
-  print('Formatting data...')
-  data_summary, train_val_data, test_data, add_train_vars = \
-    minimal_data_formatting(jp_eq_data)
-  run_summary += data_summary
-  print('Successfully formatted data...')
-
-elif data == 'detailed':
-  # Prepare the data for training
-  print('Formatting data...')
-  data_summary, train_val_data, test_data, add_train_vars = \
-    detailed_data_formatting()
-  run_summary += data_summary
-  print('Successfully formatted data...')
-
-else:
-  raise ValueError('Data type not recognized.')
+# Prepare the data for training
+print('Preparing the data...')
+data_summary, processed_data = data_preparation()
+run_summary += data_summary
+print('Successfully prepared the data...')
 
 # Train the models if specified
-if model_training != False:
-  train_models(train_val_data, add_train_vars,
-               model_training)
+if cfg.model_training != 'none':
+  train_models(processed_data, cfg.model_training)
 
 # Load the models
 nnetwork = load_model(os.path.join('data', 'nn_model.h5'), compile=False)
@@ -82,14 +52,14 @@ with open(os.path.join('data','train_summary.pkl'), 'rb') as f:
     rf_summary, nn_summary = pickle.load(f)
 
 # Evaluate the training data specified in model_evaluation
-if (model_evaluation=='train' or model_evaluation=='all'):
-  train_summary = train_eval(rforest, nnetwork, train_val_data)
+if (cfg.model_evaluation=='train' or cfg.model_evaluation=='all'):
+  train_summary = train_eval(rforest, nnetwork, processed_data)
   rf_summary += train_summary[0]
   nn_summary += train_summary[1]
 
 # Evaluate the test data if set to True
-if (model_evaluation=='test' or model_evaluation=='all'):
-  test_summary = test_eval(nnetwork, rforest, test_data)
+if (cfg.model_evaluation=='test' or cfg.model_evaluation=='all'):
+  test_summary = test_eval(nnetwork, rforest, processed_data)
   rf_summary += test_summary[0]
   nn_summary += test_summary[1]
 
@@ -98,21 +68,21 @@ run_summary += rf_summary
 run_summary += nn_summary
 
 # Plot the predicted rate of change for B and D at critical g if in the plots list
-if 'surface' in plots:
+if 'surface' in cfg.plots:
   run_summary += surface_plots(nnetwork, name='nn')
   surface_plots(rforest, name='rf')
 
 # Plot colormeshes related to the observations available if in the plots list
-if 'colormesh' in plots:
-  run_summary += colormesh_plots(train_val_data)
+if 'colormesh' in cfg.plots:
+  run_summary += colormesh_plots(processed_data)
 
 # Plot the system evolutionat the tipping point if in the plots list
-if 'tipping' in plots:
+if 'tipping' in cfg.plots:
   run_summary += tipping_evolution(nnetwork)
 
 # Make a prediction of the evolution of the system for each simulation in X_ev
 ev_summary = '\n\n***SYSTEM EVOLUTION***'
-for i,sim in enumerate(system_ev):
+for i,sim in enumerate(cfg.fwd_sim):
   ev_summary += system_evolution(nnetwork, rforest, sim, i)
 run_summary += ev_summary
 

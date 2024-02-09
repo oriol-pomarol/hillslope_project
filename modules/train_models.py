@@ -9,14 +9,13 @@ from keras import backend as K
 import matplotlib.pyplot as plt
 import os
 import joblib as jb
-from .data_formatting import subset_mask_stratified
+from .data_preparation import subset_mask_stratified
 from .surface_plots import surface_plots
 
-def train_models(train_val_data, add_train_vars=[None]*3,
-                 mode='all'):
+def train_models(processed_data, mode='all', add_train_vars=[None]*3):
 
   # Unpack the data
-  X_train, X_val, y_train, y_val = train_val_data
+  X_train, X_val, y_train, y_val, _, _ = processed_data
   w_train, len_eq_train, len_eq_val = add_train_vars
 
   # # Shuffle the training data

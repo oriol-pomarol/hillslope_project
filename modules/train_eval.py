@@ -4,10 +4,10 @@ from matplotlib import colors
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
-def train_eval(rforest, nnetwork, train_val_data):
+def train_eval(rforest, nnetwork, processed_data):
 
   # Unpack the data
-  X_train, X_val, y_train, y_val = train_val_data
+  X_train, X_val, y_train, y_val, _, _ = processed_data
 
   # Evalute RF model on validation and training data
   print('Starting RF train set evaluation...')

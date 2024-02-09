@@ -4,10 +4,10 @@ from matplotlib import colors
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
-def test_eval(nnetwork, rforest, test_data):
+def test_eval(nnetwork, rforest, processed_data):
 
   # Unpack the data
-  X_test, y_test = test_data
+  _, _, _, _, X_test, y_test = processed_data
 
   print('Starting RF test set evaluation...')
   y_pred_for = rforest.predict(X_test)
