@@ -10,7 +10,7 @@ import os
 import joblib as jb
 from keras.models import load_model
 from modules.data_generation import data_generation
-from modules.data_formatting import data_formatting
+from modules.data_formatting import minimal_data_formatting, detailed_data_formatting
 from modules.train_models import train_models
 from modules.test_eval import test_eval
 from modules.train_eval import train_eval
@@ -21,10 +21,11 @@ from modules.tipping_evolution import tipping_evolution
 print('Successfully imported libraries and modules.')
 
 # Set which functionalities to use
-model_training = 'all'      # False, 'rf', 'nn' or 'all'.
-model_evaluation = 'all'    # False, 'train', 'test', 'all'
-plots = ['surface']         # ['surface', 'colormesh', 'tipping']
-system_ev = []              # [0,1,2,'val_data_sin','val_data_lin']
+data = 'detailed'                            # 'detailed' or 'minimal'
+model_training = 'all'                       # False, 'rf', 'nn' or 'all'.
+model_evaluation = 'all'                     # False, 'train', 'test', 'all'
+plots = ['surface']                          # ['surface', 'colormesh', 'tipping']
+system_ev = []                               # [0,1,2,...,'val_data_sin','val_data_lin']
 
 run_summary = "".join(['***MODULES***',
                        '\nmodel_training = {}'.format(model_training),
@@ -35,18 +36,30 @@ run_summary = "".join(['***MODULES***',
 # Record starting run time
 start_time = time.time()
 
-# Load and preprocess/generate the data
-print('Generating data...')
-gen_summary, jp_eq_data = data_generation()
-run_summary += gen_summary
-print('Successfully generated data...')
+if data == 'minimal':
+  # Load and preprocess/generate the data
+  print('Generating data...')
+  gen_summary, jp_eq_data = data_generation()
+  run_summary += gen_summary
+  print('Successfully generated data...')
 
-# Prepare the data for training
-print('Formatting data...')
-data_summary, train_val_data, test_data, add_train_vars = \
-  data_formatting(jp_eq_data)
-run_summary += data_summary
-print('Successfully formatted data...')
+  # Prepare the data for training
+  print('Formatting data...')
+  data_summary, train_val_data, test_data, add_train_vars = \
+    minimal_data_formatting(jp_eq_data)
+  run_summary += data_summary
+  print('Successfully formatted data...')
+
+elif data == 'detailed':
+  # Prepare the data for training
+  print('Formatting data...')
+  data_summary, train_val_data, test_data, add_train_vars = \
+    detailed_data_formatting()
+  run_summary += data_summary
+  print('Successfully formatted data...')
+
+else:
+  raise ValueError('Data type not recognized.')
 
 # Train the models if specified
 if model_training != False:
@@ -97,11 +110,11 @@ if 'colormesh' in plots:
 if 'tipping' in plots:
   run_summary += tipping_evolution(nnetwork)
 
-# # Make a prediction of the evolution of the system for each simulation in X_ev
-# ev_summary = '\n\n***SYSTEM EVOLUTION***'
-# for i,sim in enumerate(X_ev):
-#   ev_summary += system_evolution(nnetwork, rforest, sim, i)
-# run_summary += ev_summary
+# Make a prediction of the evolution of the system for each simulation in X_ev
+ev_summary = '\n\n***SYSTEM EVOLUTION***'
+for i,sim in enumerate(system_ev):
+  ev_summary += system_evolution(nnetwork, rforest, sim, i)
+run_summary += ev_summary
 
 # Print execution time
 end_time = time.time()

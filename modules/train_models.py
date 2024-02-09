@@ -70,7 +70,7 @@ def train_models(train_val_data, add_train_vars=[None]*3,
 
     # Define what hyperparameter to tune and its values
     tuning_hp_name = 'w_eq'
-    tuning_hp_vals = [i/10 for i in range(1,10)]
+    tuning_hp_vals = []
 
     if tuning_hp_vals:
       print('Starting hyperparameter tuning...')

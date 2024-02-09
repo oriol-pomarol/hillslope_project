@@ -1,15 +1,89 @@
+import os
 import numpy as np
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
-import matplotlib.ticker as tck
 
-def data_formatting(jp_eq_data):
+def detailed_data_formatting():
+
+  # Initialize lists to store X and y arrays
+  X_list = []
+  y_list = []
+
+  # Load the data
+  for folder in os.listdir('data/detailed_jp'):
+    if folder.isdigit():
+      print('Loading data from simulation {}'.format(folder))
+      path = os.path.join('data', 'detailed_jp', folder)
+      biomass = np.loadtxt(os.path.join(path, 'biomass.tss'))[:,1]
+      soil_depth = np.loadtxt(os.path.join(path, 'soildepth.tss'))[:,1]
+      jumps = np.loadtxt(os.path.join(path, 'statevars_jumped.tss'))[:,1]
+      grazing_pressure = np.load(os.path.join(path, 'grazing.npy'))*24*365
+      
+      # Retrieve X and y from the data
+      raw_X_sim = np.column_stack((biomass, soil_depth, grazing_pressure))
+
+      # Pool the results by taking the median every 26 steps
+      X_sim = raw_X_sim.reshape(-1, 26, 3)
+      X_sim = np.apply_along_axis(np.median, axis=1, arr=X_sim)
+
+      # Define the output
+      y_sim = np.column_stack((X[1:,0] - X[:-1,0], X[1:,1] - X[:-1,1]))
+
+      # Find jumps every 26 steps
+      jumps = jumps.astype(bool)
+      jumps = jumps[::26]
+
+      # Make a filter to remove data before a jump
+      before_jump = np.roll(jumps, shift=-1)
+      jumps_filter = ~before_jump
+
+      # Remove the last value (no matching y)
+      jumps_filter[-1] = False
+
+      # Filter the data
+      X_sim = X_sim[jumps_filter]
+      y_sim = y_sim[jumps_filter[:-1]]
+
+      # Append the data to the lists
+      X_list.append(X_sim)
+      y_list.append(y_sim)
+
+  # Concatenate all the data
+  X = np.concatenate(X_list, axis=0)
+  y = np.concatenate(y_list, axis=0)
+
+  # Drop a percentage of the data for better performance
+  drop_size = 0.9
+  drop_mask = np.random.uniform(0,1,len(X)) >= drop_size
+  X = X[drop_mask]
+  y = y[drop_mask]
+
+
+  # Split the data between training, testing and validation
+  test_size = 0.2
+  val_size = 0.1
+  X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
+                                                      shuffle=True, random_state=10)
+  X_train, X_val, y_train, y_val = train_test_split(X_train, y_train,
+                                                    test_size=val_size/(1-test_size),
+                                                    shuffle=True, random_state=10)
+  
+  
+  # Add the data characteristics to the summary
+  data_summary = "".join(['\n\n***DATA FORMATTING***',
+                          '\ndata_type = detailed',
+                          '\ntest_size = {}'.format(test_size),
+                          '\nval_size = {}'.format(val_size),
+                          '\nfinal_train_size = {}'.format(X_train.shape[0])])
+
+  return data_summary, [X_train, X_val, y_train, y_val], [X_test, y_test], [None]*3
+
+def minimal_data_formatting(jp_eq_data):
 
   # Unpack the data
   X_jp, y_jp, X_eq, y_eq = jp_eq_data
 
   # Set the weights for the equilibrium and jumps data
-  w_eq = 0.5       # between 0 and 1
+  w_eq = 0       # between 0 and 1
 
   # Split the test data
   test_size = 0.2

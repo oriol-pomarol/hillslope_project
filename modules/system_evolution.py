@@ -38,6 +38,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   n_years = min(n_years, dt*len(B_det))
   n_steps = int(n_years/dt)
   perc_steps = n_steps//20
+  early_stopping_counter = 0
 
   # Initialize B and D
   B_min = np.ones((n_steps)) * Bo
@@ -67,10 +68,13 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
     B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0.0, c)
     D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0.0, alpha)
 
-    # Stop the evolution if it reaches 0
+    # Stop the evolution (after 200 steps) if it reaches 0
     if B_for[step]<1e-3 and D_for[step]<1e-3 and B_nn[step]<1e-3 and D_nn[step]<1e-3 \
       and B_min[step]<1e-3 and D_min[step]<1e-3:
       early_stopping_counter += 1
+    else:
+      early_stopping_counter = 0
+
     if early_stopping_counter >= 200:
       n_steps = step
       B_min = B_min[:step]

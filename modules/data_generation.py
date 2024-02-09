@@ -17,7 +17,7 @@ def data_generation():
 
     # Generate the data
     # Define some run parameters for the jumps training data
-    n_sim = 100                 # number of simulations to run
+    n_sim = 2000                 # number of simulations to run
     n_years = 10000             # maximum number of years to run, default 20000
     dt = 0.5                    # time step, 7/365 in paper, default 0.5
     n_steps = int(n_years/dt)   # number of steps to run each simulation
