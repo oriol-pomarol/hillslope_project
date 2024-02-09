@@ -26,7 +26,7 @@ def detailed_data_formatting():
       X_sim = np.apply_along_axis(np.median, axis=1, arr=X_sim)
 
       # Define the output
-      y_sim = np.column_stack((X[1:,0] - X[:-1,0], X[1:,1] - X[:-1,1]))
+      y_sim = np.column_stack((X_sim[1:,0] - X_sim[:-1,0], X_sim[1:,1] - X_sim[:-1,1]))
 
       # Find jumps every 26 steps
       jumps = jumps.astype(bool)
