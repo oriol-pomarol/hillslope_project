@@ -1,0 +1,13 @@
+results/**
+!results/**/
+!.gitkeep
+
+data/**
+!data/**/
+!.gitkeep
+
+__pycache__
+src/plotting
+code.code-workspace
+job_scheduler.sh
+test_gpu.py
