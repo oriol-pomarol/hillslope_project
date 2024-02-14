@@ -6,7 +6,6 @@ import time
 import pickle
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
-import os
 import joblib as jb
 from keras.models import load_model
 from modules.data_preparation import data_preparation
@@ -17,7 +16,8 @@ from modules.system_evolution import system_evolution
 from modules.surface_plots import surface_plots
 from modules.colormesh_plots import colormesh_plots
 from modules.tipping_evolution import tipping_evolution
-from config import general as cfg
+from config import main as cfg
+from config import paths
 print('Successfully imported libraries and modules.')
 
 # Record starting run time
@@ -37,8 +37,8 @@ if cfg.model_training != 'none':
   train_models(processed_data, cfg.model_training)
 
 # Load the models
-nnetwork = load_model(os.path.join('data', 'nn_model.h5'), compile=False)
-rf_params = jb.load(os.path.join('data', 'rf_model.joblib'))
+nnetwork = load_model(paths.models / 'nn_model.h5', compile=False)
+rf_params = jb.load(paths.models / 'rf_model.joblib')
 
 # Define a variant of the random forest that uses the trees median to predict
 class MedianRandomForestRegressor(RandomForestRegressor):
@@ -48,7 +48,7 @@ rforest = MedianRandomForestRegressor()
 rforest.__dict__ = rf_params.__dict__
 
 # Load the training summary
-with open(os.path.join('data','train_summary.pkl'), 'rb') as f:
+with open(paths.temp_data / 'train_summary.pkl', 'rb') as f:
     rf_summary, nn_summary = pickle.load(f)
 
 # Evaluate the training data specified in model_evaluation
@@ -95,5 +95,5 @@ print('Script finalized.\nExecution time: {:.3g} minutes.'.format(execution_time
 run_summary += "".join(['\n\n***\nExecution time: {:.3g} minutes.'.format(execution_time),
                         '\nEnd time: {}\n***'.format(time.ctime(end_time))])
 
-with open(os.path.join('results', 'run_summary.txt'), 'w') as f:
+with open(paths.outputs / 'run_summary.txt', 'w') as f:
     f.write(run_summary)

@@ -3,16 +3,11 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 from matplotlib import colors
-import os
+from config import paths
 
 def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
 
-  # Import the validation data
-  if isinstance(X_ev, str):
-    with open(os.path.join('data', X_ev + '.pkl'), 'rb') as f:
-        B_det, D_det, g_ev, _, _ = pickle.load(f)
-  else:
-    B_det, D_det, g_ev = X_ev
+  B_det, D_det, g_ev = X_ev
 
   # Define the physical parameters
   r, c, i, d, s = 2.1, 2.9, -0.7, 0.04, 0.4 
@@ -122,20 +117,14 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
 
   fig.patch.set_alpha(1)
   plt.setp(axs, xlim=(0, n_years))
-  if isinstance(X_ev, str):
-    plt.savefig(f'results/system_evolution_{X_ev}.png')
-  else:
-    plt.savefig(f'results/system_evolution_train_{iter_count}.png')
+  plt.savefig(paths.figures / f'system_evolution_{X_ev}.png')
+
   print(f'Sim {iter_count}: Successfully completed system evolution.')
 
   # Save the results
   saved_vars = [B_min, B_for, B_nn, D_min, D_for, D_nn, g_ev[:n_steps], t]
   header_vars = 'B_min,B_for,B_nn,D_min,D_for,D_nn,g,t'
-
-  if isinstance(X_ev, str):
-    file_path = f'results/system_evolution_{X_ev}.csv'
-  else:
-    file_path = f'results/system_evolution_train_{iter_count}.csv'
+  file_path = paths.outputs / f'system_evolution_{X_ev}.csv'
 
   np.savetxt(file_path, np.column_stack(saved_vars), delimiter=',', header = header_vars)
 

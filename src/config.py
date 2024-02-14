@@ -1,7 +1,8 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 @dataclass(frozen=True)
-class general:
+class main:
     model_training: str = 'all' # 'none', 'rf', 'nn' or 'all'.
     model_evaluation: str = 'all'   # 'none', 'train', 'test' or 'all'
     fwd_sim: list = []  # [0,1,2,...,'val_data_sin','val_data_lin']
@@ -13,8 +14,10 @@ class data_preparation:
     # DATA SOURCE
     data_source: str = 'minimal'   # 'detailed' or 'minimal'
 
+    # DATA LOADING (if data_source == 'detailed')
+    data_folder: str = 'detailed_jp'   # Name of the folder where the data is located
+
     # DATA GENERATION (if data_source == 'minimal')
-    data_source: str = general.data_source
     n_sim: int = 2000   # Number of simulations to generate
     n_years: int = 10000    # Number of years per simulation
     dt: float = 0.5   # Time step in years
@@ -26,3 +29,15 @@ class data_preparation:
     test_size: float = 0.2
     val_size: float = 0.1
     drop_size: float = 0.0
+
+@dataclass(frozen=True)
+class paths:
+    # DATA PATHS
+    raw_data: Path = Path('../data/raw')
+    processed_data: Path = Path('../data/processed')
+    temp_data: Path = Path('../data/temp')
+
+    # RESULTS PATHS
+    figures: Path = Path('../results/figures')
+    outputs: Path = Path('../results/outputs')
+    models: Path = Path('../results/models')

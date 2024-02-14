@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import pandas as pd
 import matplotlib.ticker as tck
+from config import paths
 
 def colormesh_plots(train_val_data):
 
@@ -54,7 +55,7 @@ def colormesh_plots(train_val_data):
                      f"({n_obs*100/X_train.shape[0]:.2f}% of training data).")
 
   fig.colorbar(mesh, label = "Number of observations")
-  plt.savefig('results/colormesh_plot_obs.png')
+  plt.savefig(paths.figures / 'colormesh_plot_obs.png')
 
   # Plot the mean rate of change per combination of B and D
   fig, axs = plt.subplots(1, 2, figsize = (20,7))
@@ -71,7 +72,7 @@ def colormesh_plots(train_val_data):
   axs[1].set_ylabel("Biomass (B)")
   fig.colorbar(mesh_1, label = "Mean dD/dt", ax=axs[1])
 
-  plt.savefig('results/colormesh_plot_mean.png')
+  plt.savefig(paths.figures / 'colormesh_plot_mean.png')
 
   # Plot the std of the rate of change per combination of B and D
   fig, axs = plt.subplots(1, 2, figsize = (20,7))
@@ -89,7 +90,7 @@ def colormesh_plots(train_val_data):
   fig.colorbar(mesh_1, label = "Std. dD/dt", ax=axs[1])
 
   plt.text(2, 0, "This is a comment")
-  plt.savefig('results/colormesh_plot_std.png')
+  plt.savefig(paths.figures / 'colormesh_plot_std.png')
 
   # Add a couple lines to the summary with the system evolution parameters
   colormesh_summary = "".join(['\n\n***COLORMESH PLOTS***',

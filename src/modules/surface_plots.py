@@ -6,7 +6,7 @@ import matplotlib.ticker as tck
 from matplotlib.ticker import FormatStrFormatter
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.colors as mc
-import os
+from config import paths
 
 def surface_plots(model, name='', g_plot = 1.76):
 
@@ -105,7 +105,7 @@ def surface_plots(model, name='', g_plot = 1.76):
               linewidth=4, color = 'black', zorder=11)
 
   plt.tight_layout()
-  plt.savefig(os.path.join('results',f'surface_plot_{name}.png'))
+  plt.savefig(paths.figures / f'surface_plot_{name}.png')
   #plt.savefig(os.path.join('results','surface_plot_nn.eps'), format='eps')
 
   # Plot the equilibrium lines
@@ -131,7 +131,7 @@ def surface_plots(model, name='', g_plot = 1.76):
   ax.set_xlabel('Soil depth ($m$)')
   ax.legend(loc = 'best', framealpha=1)
   plt.tight_layout()
-  plt.savefig(os.path.join('results',f'eq_lines_{name}.png'))
+  plt.savefig(paths.figures / f'eq_lines_{name}.png')
   #plt.savefig(os.path.join('results','eq_lines_nn.eps'), format='eps')
 
   # Find the feature space velocity and take the logarithm
@@ -148,14 +148,14 @@ def surface_plots(model, name='', g_plot = 1.76):
   ax.set_ylabel('Biomass ($kg/m^2$)')
   ax.set_xlabel('Soil depth ($m$)')
   plt.tight_layout()
-  plt.savefig(os.path.join('results',f'streamplot_{name}.png'), facecolor='white')
+  plt.savefig(paths.figures / f'streamplot_{name}.png', facecolor='white')
 
 
   # Save the results
   print('Saving surface plot results...')
   df = pd.DataFrame({'B_grid':X_grid[:,0], 'D_grid':X_grid[:,1],
                      'dB_dt':Z[:,0], 'dD_dt':Z[:,1]})
-  df.to_csv(os.path.join('results',f'surface_plots_{name}.csv'))
+  df.to_csv(paths.outputs / f'surface_plots_{name}.csv')
   print('Successfully saved surface plot results.')
 
   # Add a couple lines to the summary with the system evolution parameters

@@ -1,7 +1,8 @@
-import os
+from pathlib import Path
 import numpy as np
 from sklearn.model_selection import train_test_split
 from config import data_preparation as cfg
+from config import paths
 
 def data_preparation():
 
@@ -48,6 +49,14 @@ def data_preparation():
                      test_size=effective_val_size,
                      shuffle=True, random_state=10)
   
+  # Save the processed data to individual files
+  np.save(paths.processed_data / 'X_train.npy', X_train)
+  np.save(paths.processed_data / 'X_val.npy', X_val)
+  np.save(paths.processed_data / 'X_test.npy', X_test)
+  np.save(paths.processed_data / 'y_train.npy', y_train)
+  np.save(paths.processed_data / 'y_val.npy', y_val)
+  np.save(paths.processed_data / 'y_test.npy', y_test)
+  
   # Make the summary of the outputs
   dp_summary = "".join(['\n\nDATA PREPARATION:',
                         '\nn_jumps: {}'.format(np.sum(~jumps_mask)),
@@ -56,6 +65,8 @@ def data_preparation():
                         '\ntrain_size: {}'.format(len(X_train))])
   
   return dp_summary, [X_train, X_val, X_test, y_train, y_val, y_test]
+
+##############################################################################
 
 def data_generation():
  # Define the physical parameters
@@ -122,21 +133,23 @@ def data_generation():
 
   return X, y, before_jump
 
+##############################################################################
+
 def data_loading():
     # Initialize lists to store X and y arrays
   X_list = []
   y_list = []
 
   # Load the data
-  for folder in os.listdir('data/detailed_jp'):
-    if folder.isdigit():
-      print('Loading data from simulation {}'.format(folder))
-      path = os.path.join('data', 'detailed_jp', folder)
-      biomass = np.loadtxt(os.path.join(path, 'biomass.tss'))[:,1]
-      soil_depth = np.loadtxt(os.path.join(path, 'soildepth.tss'))[:,1]
-      jumps = np.loadtxt(os.path.join(path, 'statevars_jumped.tss'))[:,1].astype(bool)
-      grazing_pressure = np.load(os.path.join(path, 'grazing.npy'))*24*365
-      
+  data_path = paths.raw_data / cfg.data_folder
+
+  for folder in data_path.iterdir():
+    if folder.name.isdigit():
+      print(f'Loading data from simulation {folder.name}')
+      biomass = np.loadtxt(folder / 'biomass.tss')[:,1]
+      soil_depth = np.loadtxt(folder / 'soildepth.tss')[:,1]
+      jumps = np.loadtxt(folder / 'statevars_jumped.tss')[:,1].astype(bool)
+      grazing_pressure = np.load(folder / 'grazing.npy') * 24 * 365
       # Retrieve X and y from the data
       raw_X_sim = np.column_stack((biomass, soil_depth, grazing_pressure))
 

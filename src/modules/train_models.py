@@ -2,12 +2,12 @@ import time
 import pickle
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from sklearn.ensemble import RandomForestRegressor
 import tensorflow as tf
 from tensorflow import keras
 from keras import backend as K
 import matplotlib.pyplot as plt
-import os
 import joblib as jb
 from .data_preparation import subset_mask_stratified
 from .surface_plots import surface_plots
@@ -41,7 +41,7 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
     print('RF training time: {:.3g} minutes.'.format(train_rf_time))
 
     # Save the model
-    jb.dump(rforest, os.path.join('data','rf_model.joblib')) 
+    jb.dump(rforest, Path('../results/models/rf_model.joblib')) 
     print('Successfully completed Random Forest training.')
 
   if (mode=='nn' or mode=='all'):
@@ -73,7 +73,7 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
 
     if tuning_hp_vals:
       print('Starting hyperparameter tuning...')
-      best_hp = hp_tuning(train_val_data, add_train_vars, hp, custom_mae,
+      best_hp = hp_tuning(processed_data[:-2], add_train_vars, hp, custom_mae,
                           tuning_hp_name, tuning_hp_vals)
       # Apply the best hyperparameter
       if tuning_hp_name == 'w_eq':
@@ -111,7 +111,7 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
     
     # Save the history as a pandas dataframe
     history_df = pd.DataFrame(history.history)
-    history_df.to_csv(os.path.join('results','training_history.csv'))
+    history_df.to_csv(Path('../results/training_history.csv'))
     
     # Plot the MSE history of the training
     plt.figure()
@@ -121,13 +121,13 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
     plt.legend()
     plt.xlabel('Epoch')
     plt.ylabel('Custom MSE')
-    plt.savefig(os.path.join('results','training_history.png'))
+    plt.savefig(Path('../results/training_history.png'))
 
     train_nn_end = time.time()
     train_nn_time = (train_nn_end - train_nn_start)/60
     print('NN training time: {:.3g} minutes.'.format(train_nn_time))
 
-    nnetwork.save(os.path.join('data', 'nn_model.h5'))
+    nnetwork.save(Path('../results/models/nn_model.h5'))
     print('Successfully completed Neural Network training.')
 
     # Retrieve the loss name
@@ -138,7 +138,7 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
 
   # If training only one model, load the parameters from the other model
   if (mode=='rf' or mode=='nn'):
-    with open(os.path.join('data','train_summary.pkl'), 'rb') as f:
+    with open(Path('../data/temp/train_summary.pkl'), 'rb') as f:
         rf_summary, nn_summary = pickle.load(f)
       
   # Save the training summary
@@ -159,7 +159,7 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
     for key, value in hp.items():
       nn_summary += f"\n{key} = {value}"
 
-  with open(os.path.join('data','train_summary.pkl'), 'wb') as f:
+  with open(Path('../data/temp/train_summary.pkl'), 'wb') as f:
       pickle.dump([rf_summary, nn_summary], f)
 
   return
@@ -235,7 +235,7 @@ def hp_tuning(train_val_data, add_train_vars, hp, loss, tuning_hp_name, tuning_h
   if len_eq_val is not None:
     tuning_res_dict['loss_eq'] = losses_eq
     tuning_res_dict['loss_jp'] = losses_jp
-  pd.DataFrame(tuning_res_dict).to_csv(os.path.join('results','hp_tuning.csv'))
+  pd.DataFrame(tuning_res_dict).to_csv(Path('../results/output/hp_tuning.csv'))
 
   # Select the best hyperparameter and retrain the model
   best_hp = tuning_hp_vals[np.argmin(losses)]

@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from config import paths
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
@@ -54,7 +55,7 @@ def test_eval(nnetwork, rforest, processed_data):
   r2_for_1 = r2_score(y_test[:,1], y_pred_for[:,1])
   axs[0].text(0.05, 0.95, f'R² = {r2_for_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
   axs[1].text(0.05, 0.95, f'R² = {r2_for_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
-  plt.savefig('results/predicted_vs_true_rf.png')
+  plt.savefig(paths.figures / 'predicted_vs_true_rf.png')
 
   
   print('Successfully completed RF test set evaluation.')
@@ -108,10 +109,10 @@ def test_eval(nnetwork, rforest, processed_data):
   r2_nn_1 = r2_score(y_test[:,1], y_pred_nn[:,1])
   axs[0].text(0.05, 0.95, f'R² = {r2_nn_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
   axs[1].text(0.05, 0.95, f'R² = {r2_nn_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
-  plt.savefig('results/predicted_vs_true_nn.png')
+  plt.savefig(paths.figures / 'predicted_vs_true_nn.png')
 
   # Save the results
-  np.savez('results/test_evaluation.npz', y_test=y_test, y_pred_for=y_pred_for, y_pred_nn=y_pred_nn)
+  np.savez(paths.outputs / 'test_evaluation.npz', y_test=y_test, y_pred_for=y_pred_for, y_pred_nn=y_pred_nn)
   print('Successfully completed NN test set evaluation.')
 
   return rf_test_summary, nn_test_summary

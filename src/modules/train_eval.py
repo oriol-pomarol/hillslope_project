@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from pathlib import Path
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
@@ -59,7 +60,7 @@ def train_eval(rforest, nnetwork, processed_data):
   r2_train_for_1 = r2_score(y_train[:,1], y_pred_train_for[:,1])
   axs[0].text(0.05, 0.95, f'R² = {r2_train_for_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
   axs[1].text(0.05, 0.95, f'R² = {r2_train_for_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
-  plt.savefig('results/train_predicted_vs_true_rf.png')
+  plt.savefig(Path('../results/figures/train_predicted_vs_true_rf.png'))
 
   # Evalute NN model on validation and training data
   print('Starting NN train set evaluation...')
@@ -110,6 +111,6 @@ def train_eval(rforest, nnetwork, processed_data):
   r2_train_nn_1 = r2_score(y_train[:,1], y_pred_train_nn[:,1])
   axs[0].text(0.05, 0.95, f'R² = {r2_train_nn_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
   axs[1].text(0.05, 0.95, f'R² = {r2_train_nn_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
-  plt.savefig('results/train_predicted_vs_true_nn.png')
+  plt.savefig(Path('../results/figures/train_predicted_vs_true_nn.png'))
 
   return rf_train_summary, nn_train_summary
