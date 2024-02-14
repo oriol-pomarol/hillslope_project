@@ -28,13 +28,13 @@ run_summary = ""
 
 # Prepare the data for training
 print('Preparing the data...')
-data_summary, processed_data = data_preparation()
+data_summary = data_preparation()
 run_summary += data_summary
 print('Successfully prepared the data...')
 
 # Train the models if specified
 if cfg.model_training != 'none':
-  train_models(processed_data, cfg.model_training)
+  train_models(cfg.model_training)
 
 # Load the models
 nnetwork = load_model(paths.models / 'nn_model.h5', compile=False)
@@ -53,13 +53,13 @@ with open(paths.temp_data / 'train_summary.pkl', 'rb') as f:
 
 # Evaluate the training data specified in model_evaluation
 if (cfg.model_evaluation=='train' or cfg.model_evaluation=='all'):
-  train_summary = train_eval(rforest, nnetwork, processed_data)
+  train_summary = train_eval(rforest, nnetwork)
   rf_summary += train_summary[0]
   nn_summary += train_summary[1]
 
 # Evaluate the test data if set to True
 if (cfg.model_evaluation=='test' or cfg.model_evaluation=='all'):
-  test_summary = test_eval(nnetwork, rforest, processed_data)
+  test_summary = test_eval(nnetwork, rforest)
   rf_summary += test_summary[0]
   nn_summary += test_summary[1]
 
@@ -74,7 +74,7 @@ if 'surface' in cfg.plots:
 
 # Plot colormeshes related to the observations available if in the plots list
 if 'colormesh' in cfg.plots:
-  run_summary += colormesh_plots(processed_data)
+  run_summary += colormesh_plots()
 
 # Plot the system evolutionat the tipping point if in the plots list
 if 'tipping' in cfg.plots:

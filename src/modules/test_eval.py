@@ -5,10 +5,11 @@ from config import paths
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
-def test_eval(nnetwork, rforest, processed_data):
+def test_eval(nnetwork, rforest):
 
-  # Unpack the data
-  _, _, _, _, X_test, y_test = processed_data
+  # Load the test data
+  X_test = np.load(paths.processed_data / 'X_test.npy')
+  y_test = np.load(paths.processed_data / 'y_test.npy')
 
   print('Starting RF test set evaluation...')
   y_pred_for = rforest.predict(X_test)

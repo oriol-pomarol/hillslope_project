@@ -1,14 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-import pandas as pd
-import matplotlib.ticker as tck
 from config import paths
 
-def colormesh_plots(train_val_data):
+def colormesh_plots():
 
-  # Unpack the data
-  X_train, y_train, _, _ = train_val_data
+  # Load the training data
+  X_train = np.load(paths.processed_data / 'X_train.npy')
+  y_train = np.load(paths.processed_data / 'y_train.npy')
 
   # Set the parameters
   n_bins = 24

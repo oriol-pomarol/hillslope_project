@@ -2,21 +2,23 @@ import time
 import pickle
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from sklearn.ensemble import RandomForestRegressor
 import tensorflow as tf
 from tensorflow import keras
 from keras import backend as K
 import matplotlib.pyplot as plt
 import joblib as jb
-from .data_preparation import subset_mask_stratified
 from .surface_plots import surface_plots
+from config import model_training as cfg
+from config import paths
 
-def train_models(processed_data, mode='all', add_train_vars=[None]*3):
+def train_models(mode='all'):
 
-  # Unpack the data
-  X_train, X_val, y_train, y_val, _, _ = processed_data
-  w_train, len_eq_train, len_eq_val = add_train_vars
+  # Load the training and validation data
+  X_train = np.load(paths.processed_data / 'X_train.npy')
+  X_val = np.load(paths.processed_data / 'X_val.npy')
+  y_train = np.load(paths.processed_data / 'y_train.npy')
+  y_val = np.load(paths.processed_data / 'y_val.npy')
 
   # # Shuffle the training data
   # shuffled_indices = np.arange(len(X_train))
@@ -34,14 +36,14 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
                                     min_samples_leaf = 2,
                                     min_samples_split = 20)
     train_rf_start = time.time()
-    rforest.fit(X_train, y_train, sample_weight=w_train)
+    rforest.fit(X_train, y_train)
 
     train_rf_end = time.time()
     train_rf_time = (train_rf_end - train_rf_start)/60
     print('RF training time: {:.3g} minutes.'.format(train_rf_time))
 
     # Save the model
-    jb.dump(rforest, Path('../results/models/rf_model.joblib')) 
+    jb.dump(rforest, paths.models / 'rf_model.joblib')
     print('Successfully completed Random Forest training.')
 
   if (mode=='nn' or mode=='all'):
@@ -67,22 +69,11 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
     hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu',
           'learning_rate':1E-5, 'batch_size':128, 'l1_reg':1e-5, 'n_epochs':200}
 
-    # Define what hyperparameter to tune and its values
-    tuning_hp_name = 'w_eq'
-    tuning_hp_vals = []
-
-    if tuning_hp_vals:
+    if cfg.tuning_hp_vals:
       print('Starting hyperparameter tuning...')
-      best_hp = hp_tuning(processed_data[:-2], add_train_vars, hp, custom_mae,
-                          tuning_hp_name, tuning_hp_vals)
-      # Apply the best hyperparameter
-      if tuning_hp_name == 'w_eq':
-        # Generate the weights for the equilibrium and jumps data
-        length_ratio = len_eq_train/(len(X_train) - len_eq_train)
-        w_train = np.concatenate((best_hp*np.ones(len_eq_train)*length_ratio,
-                                  (1-best_hp)*np.ones(len(X_train) - len_eq_train)))
-      else:
-        hp[tuning_hp_name] = best_hp
+      best_hp = hp_tuning([X_train, X_val, y_train, y_val], hp, custom_mae,
+                          cfg.tuning_hp_name, cfg.tuning_hp_vals)
+      hp[cfg.tuning_hp_name] = best_hp
       print('Successfully tuned hyperparameters.')
 
     # Define the model
@@ -95,23 +86,12 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
     # Compile and fit the model
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=custom_mae)
     train_nn_start = time.time()
-
-    # Add the separate validation sets if they are provided
-    if len_eq_val is None:
-      history = nnetwork.fit(X_train, y_train, epochs = hp['n_epochs'], validation_data = (X_val, y_val),
-                               batch_size = hp['batch_size'], sample_weight = w_train)
-    else:
-      X_val_eq = X_val[:len_eq_val]
-      y_val_eq = y_val[:len_eq_val]
-      X_val_jp = X_val[len_eq_val:]
-      y_val_jp = y_val[len_eq_val:]
-      history = AdditionalValidationSets([(X_val_eq, y_val_eq, 'val_loss_eq'), (X_val_jp, y_val_jp, 'val_loss_jp')])
-      nnetwork.fit(X_train, y_train, epochs = hp['n_epochs'], validation_data = (X_val, y_val),
-                   batch_size = hp['batch_size'], sample_weight = w_train, callbacks=[history])
+    history = nnetwork.fit(X_train, y_train, epochs = hp['n_epochs'], validation_data = (X_val, y_val),
+                               batch_size = hp['batch_size'])
     
     # Save the history as a pandas dataframe
     history_df = pd.DataFrame(history.history)
-    history_df.to_csv(Path('../results/training_history.csv'))
+    history_df.to_csv(paths.outputs / 'training_history.csv')
     
     # Plot the MSE history of the training
     plt.figure()
@@ -121,13 +101,13 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
     plt.legend()
     plt.xlabel('Epoch')
     plt.ylabel('Custom MSE')
-    plt.savefig(Path('../results/training_history.png'))
+    plt.savefig(paths.figures / 'training_history.png')
 
     train_nn_end = time.time()
     train_nn_time = (train_nn_end - train_nn_start)/60
     print('NN training time: {:.3g} minutes.'.format(train_nn_time))
 
-    nnetwork.save(Path('../results/models/nn_model.h5'))
+    nnetwork.save(paths.models / 'nn_model.h5')
     print('Successfully completed Neural Network training.')
 
     # Retrieve the loss name
@@ -138,7 +118,7 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
 
   # If training only one model, load the parameters from the other model
   if (mode=='rf' or mode=='nn'):
-    with open(Path('../data/temp/train_summary.pkl'), 'rb') as f:
+    with open(paths.temp_data / 'train_summary.pkl', 'rb') as f:
         rf_summary, nn_summary = pickle.load(f)
       
   # Save the training summary
@@ -159,45 +139,30 @@ def train_models(processed_data, mode='all', add_train_vars=[None]*3):
     for key, value in hp.items():
       nn_summary += f"\n{key} = {value}"
 
-  with open(Path('../data/temp/train_summary.pkl'), 'wb') as f:
+  with open(paths.temp_data / 'train_summary.pkl', 'wb') as f:
       pickle.dump([rf_summary, nn_summary], f)
 
   return
 
-def hp_tuning(train_val_data, add_train_vars, hp, loss, tuning_hp_name, tuning_hp_vals):
+def hp_tuning(train_val_data, hp, loss, tuning_hp_name, tuning_hp_vals):
 
   # Unpack the data
   X_train, X_val, y_train, y_val = train_val_data
-  w_train, len_eq_train, len_eq_val = add_train_vars
 
-  # Create empty lists to store the losses
+  # Create an empty list to store the losses
   losses = []
-  losses_eq = []
-  losses_jp = []
 
-  # Make a mask to subset of the data for tuning, conserving the eq/jp ratio
-  tuning_factor = 0.1
-  tuning_mask, len_eq_tuning, len_jp_tuning = \
-    subset_mask_stratified(tuning_factor, len(X_train), len_eq_train)
+  # Make a mask to subset of the data for tuning
+  tuning_mask = np.random.rand(len(X_train)) < cfg.tuning_size
 
   # Subset the data for tuning
   X_tuning = X_train[tuning_mask]
   y_tuning = y_train[tuning_mask]
-  if w_train is not None:
-    w_tuning = w_train[tuning_mask]
 
   # Test each hyperparameter value
   for i, value in enumerate(tuning_hp_vals):
     print(f'Testing hp {i+1} of {len(tuning_hp_vals)}...')
-
-    # Change the hyperparameter to the tuning value
-    if tuning_hp_name == 'w_eq':
-      # Generate the weights for the equilibrium and jumps data
-      length_ratio = len_jp_tuning/len_eq_tuning
-      w_tuning = np.concatenate((value*np.ones(len_eq_tuning)*length_ratio,
-                                (1-value)*np.ones(len_jp_tuning)))
-    else:
-      hp[tuning_hp_name] = value
+    hp[tuning_hp_name] = value
 
     # Define the model
     nnetwork = keras.Sequential()
@@ -210,92 +175,18 @@ def hp_tuning(train_val_data, add_train_vars, hp, loss, tuning_hp_name, tuning_h
     # Compile and fit the model
     nnetwork.compile(optimizer=keras.optimizers.Adam(learning_rate=hp['learning_rate']), loss=loss)
     history = nnetwork.fit(X_tuning, y_tuning, epochs = hp['n_epochs'], validation_data = (X_val, y_val), 
-                          batch_size = hp['batch_size'], sample_weight = w_tuning)
+                          batch_size = hp['batch_size'])
     
     # Make a surface plot of the model
     surface_plots(nnetwork, name=f'{tuning_hp_name}_{value}')
-    
-    if len_eq_val is not None:
-      # Split the validation loss into equilibrium and jumps
-      X_val_eq = X_val[:len_eq_val]
-      y_val_eq = y_val[:len_eq_val]
-      X_val_jp = X_val[len_eq_val:]
-      y_val_jp = y_val[len_eq_val:]
-
-      # Evaluate the model on the validation sets
-      val_loss_eq = nnetwork.evaluate(X_val_eq, y_val_eq)
-      val_loss_jp = nnetwork.evaluate(X_val_jp, y_val_jp)
-      losses_eq.append(val_loss_eq)
-      losses_jp.append(val_loss_jp)
 
     losses.append(history.history['val_loss'][-1])
 
   # Save a csv with each model's loss and hp
   tuning_res_dict = {tuning_hp_name:tuning_hp_vals, 'loss':losses}
-  if len_eq_val is not None:
-    tuning_res_dict['loss_eq'] = losses_eq
-    tuning_res_dict['loss_jp'] = losses_jp
-  pd.DataFrame(tuning_res_dict).to_csv(Path('../results/output/hp_tuning.csv'))
+  pd.DataFrame(tuning_res_dict).to_csv(paths.outputs / 'hp_tuning.csv')
 
   # Select the best hyperparameter and retrain the model
   best_hp = tuning_hp_vals[np.argmin(losses)]
   print('Best model has {} = {:.1g}.'.format(tuning_hp_name, best_hp))
   return best_hp
-
-# Source: https://stackoverflow.com/questions/47731935/using-multiple-validation-sets-with-keras
-# Should rewrite this for my specific problem
-from keras.callbacks import Callback
-class AdditionalValidationSets(Callback):
-    def __init__(self, validation_sets, verbose=0, batch_size=None):
-        """
-        :param validation_sets:
-        a list of 3-tuples (validation_data, validation_targets, validation_set_name)
-        or 4-tuples (validation_data, validation_targets, sample_weights, validation_set_name)
-        :param verbose:
-        verbosity mode, 1 or 0
-        :param batch_size:
-        batch size to be used when evaluating on the additional datasets
-        """
-        super(AdditionalValidationSets, self).__init__()
-        self.validation_sets = validation_sets
-        for validation_set in self.validation_sets:
-            if len(validation_set) not in [3, 4]:
-                raise ValueError()
-        self.epoch = []
-        self.history = {}
-        self.verbose = verbose
-        self.batch_size = batch_size
-
-    def on_train_begin(self, logs=None):
-        self.epoch = []
-        self.history = {}
-
-    def on_epoch_end(self, epoch, logs=None):
-        logs = logs or {}
-        self.epoch.append(epoch)
-
-        # record the same values as History() as well
-        for k, v in logs.items():
-            self.history.setdefault(k, []).append(v)
-
-        # evaluate on the additional validation sets
-        for validation_set in self.validation_sets:
-            if len(validation_set) == 3:
-                validation_data, validation_targets, validation_set_name = validation_set
-                sample_weights = None
-            elif len(validation_set) == 4:
-                validation_data, validation_targets, sample_weights, validation_set_name = validation_set
-            else:
-                raise ValueError()
-
-            results = self.model.evaluate(x=validation_data,
-                                          y=validation_targets,
-                                          verbose=self.verbose,
-                                          sample_weight=sample_weights,
-                                          batch_size=self.batch_size)
-            if isinstance(results, float):
-                results = [results]  # Convert single float to a list
-
-            for metric, result in zip(self.model.metrics_names,results):
-                valuename = validation_set_name + '_' + metric
-                self.history.setdefault(valuename, []).append(result)

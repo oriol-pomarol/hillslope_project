@@ -37,6 +37,7 @@ def data_preparation():
     X = X[drop_mask]
     y = y[drop_mask]
     print(f"Number of dropped values: {np.sum(~drop_mask)}.")
+  n_dropped = np.sum(~drop_mask) if cfg.drop_size > 0 else 0
 
   # Split the data between training, testing and validation
   X_train, X_test, y_train, y_test = \
@@ -61,10 +62,10 @@ def data_preparation():
   dp_summary = "".join(['\n\nDATA PREPARATION:',
                         '\nn_jumps: {}'.format(np.sum(~jumps_mask)),
                         '\nn_zeroes: {}'.format(np.sum(zeros_mask)),
-                        '\nn_dropped: {}'.format(np.sum(~drop_mask)),
+                        '\nn_dropped: {}'.format(n_dropped),
                         '\ntrain_size: {}'.format(len(X_train))])
   
-  return dp_summary, [X_train, X_val, X_test, y_train, y_val, y_test]
+  return dp_summary
 
 ##############################################################################
 
@@ -129,7 +130,7 @@ def data_generation():
   y = np.column_stack((dB_dt_jp.reshape(-1), dD_dt_jp.reshape(-1)))
   jumps = jumps.reshape(-1)
   before_jump = np.roll(jumps, shift=-1)
-  before_jump = before_jump[:-1]
+  before_jump[:-1] = False
 
   return X, y, before_jump
 
