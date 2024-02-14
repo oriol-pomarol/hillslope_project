@@ -1,9 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from config import paths
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
 
-def test_eval(nnetwork, rforest, X_test, y_test):
+def test_eval(nnetwork, rforest):
+
+  # Load the test data
+  X_test = np.load(paths.processed_data / 'X_test.npy')
+  y_test = np.load(paths.processed_data / 'y_test.npy')
 
   print('Starting RF test set evaluation...')
   y_pred_for = rforest.predict(X_test)
@@ -44,7 +50,15 @@ def test_eval(nnetwork, rforest, X_test, y_test):
   fig.colorbar(h1[3], ax=axs[1])
   fig.suptitle('Random forest')
   fig.patch.set_alpha(1)
-  plt.savefig('results/predicted_vs_true_rf.png')
+
+  # Calculate R² value for RF for each plot and add it to the plot
+  r2_for_0 = r2_score(y_test[:,0], y_pred_for[:,0])
+  r2_for_1 = r2_score(y_test[:,1], y_pred_for[:,1])
+  axs[0].text(0.05, 0.95, f'R² = {r2_for_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
+  axs[1].text(0.05, 0.95, f'R² = {r2_for_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
+  plt.savefig(paths.figures / 'predicted_vs_true_rf.png')
+
+  
   print('Successfully completed RF test set evaluation.')
 
 
@@ -86,13 +100,20 @@ def test_eval(nnetwork, rforest, X_test, y_test):
   axs[1].autoscale()
 
   fig.colorbar(h0[3], ax=axs[0])
+  print(min(y_test[:,1]), max(y_test[:,1]), min(y_pred_nn[:,1]), max(y_pred_nn[:,1]))
   fig.colorbar(h1[3], ax=axs[1])
   fig.suptitle('Neural network')
   fig.patch.set_alpha(1)
-  plt.savefig('results/predicted_vs_true_nn.png')
+
+  # Calculate R² value for NN for each plot and add it to the plot
+  r2_nn_0 = r2_score(y_test[:,0], y_pred_nn[:,0])
+  r2_nn_1 = r2_score(y_test[:,1], y_pred_nn[:,1])
+  axs[0].text(0.05, 0.95, f'R² = {r2_nn_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
+  axs[1].text(0.05, 0.95, f'R² = {r2_nn_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
+  plt.savefig(paths.figures / 'predicted_vs_true_nn.png')
 
   # Save the results
-  np.savez('results/test_evaluation.npz', y_test=y_test, y_pred_for=y_pred_for, y_pred_nn=y_pred_nn)
+  np.savez(paths.outputs / 'test_evaluation.npz', y_test=y_test, y_pred_for=y_pred_for, y_pred_nn=y_pred_nn)
   print('Successfully completed NN test set evaluation.')
 
   return rf_test_summary, nn_test_summary

@@ -3,16 +3,11 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 from matplotlib import colors
-import os
+from config import paths
 
 def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
 
-  # Import the validation data
-  if isinstance(X_ev, str):
-    with open(os.path.join('data', X_ev + '.pkl'), 'rb') as f:
-        B_det, D_det, g_ev, B_std, D_std = pickle.load(f)
-  else:
-    B_det, D_det, g_ev = X_ev
+  B_det, D_det, g_ev = X_ev
 
   # Define the physical parameters
   r, c, i, d, s = 2.1, 2.9, -0.7, 0.04, 0.4 
@@ -23,7 +18,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   def dX_dt(B,D,g):
     dB_dt_step = (1-(1-i)*np.exp(-1*D/d))*(r*B*(1-B/c))-g*B/(s+B)
     dD_dt_step = Wo*np.exp(-1*a*D)-np.exp(-1*B/b)*(Et+np.exp(-1*D/k)*(Eo-Et))-C
-    return dB_dt_step*(B!=0), dD_dt_step*(D!=0)
+    return dB_dt_step, dD_dt_step
 
   # Define some run parameters
   print(f'Sim {iter_count}: Starting system evolution...')
@@ -37,12 +32,12 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   # Compute the number of steps, t sequence, and when to show the percentages
   n_years = min(n_years, dt*len(B_det))
   n_steps = int(n_years/dt)
-  t = np.linspace(0, n_years, n_steps)
   perc_steps = n_steps//20
+  early_stopping_counter = 0
 
   # Initialize B and D
-  B_steps = np.ones((n_steps)) * Bo
-  D_steps = np.ones((n_steps)) * Do
+  B_min = np.ones((n_steps)) * Bo
+  D_min = np.ones((n_steps)) * Do
 
   B_for = np.ones((n_steps)) * Bo
   D_for = np.ones((n_steps)) * Do
@@ -56,29 +51,45 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
       print('Sim {}: {:.0f}% of steps completed.'.format(iter_count, 100*step/n_steps))
       
     # Compute the derivatives
-    steps_slopes = dX_dt(B_steps[step-1], D_steps[step-1], g_ev[step-1])
     nn_slopes = nnetwork.predict(np.array([[B_nn[step-1], D_nn[step-1], g_ev[step-1]]]), verbose = False)
     for_slopes = rforest.predict(np.array([[B_for[step-1], D_for[step-1], g_ev[step-1]]]))
+    min_slopes = dX_dt(B_min[step-1], D_min[step-1], g_ev[step-1])
 
     #compute the new values, forced to be within the physically possible results
-    B_steps[step] = np.clip(B_steps[step-1] + steps_slopes[0]*dt, 0, c)
-    D_steps[step] = np.clip(D_steps[step-1] + steps_slopes[1]*dt, 0, alpha)
-    B_for[step] = np.clip(B_for[step-1] + for_slopes.squeeze()[0]*dt, 0, 7)
-    D_for[step] = np.clip(D_for[step-1] + for_slopes.squeeze()[1]*dt, 0, 3)
-    B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0, 7)
-    D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0, 3)
+    B_min[step] = np.clip(B_min[step-1] + min_slopes[0]*dt, 0.0, c)
+    D_min[step] = np.clip(D_min[step-1] + min_slopes[1]*dt, 0.0, alpha)
+    B_for[step] = np.clip(B_for[step-1] + for_slopes.squeeze()[0]*dt, 0.0, c)
+    D_for[step] = np.clip(D_for[step-1] + for_slopes.squeeze()[1]*dt, 0.0, alpha)
+    B_nn[step] = np.clip(B_nn[step-1] + nn_slopes.squeeze()[0]*dt, 0.0, c)
+    D_nn[step] = np.clip(D_nn[step-1] + nn_slopes.squeeze()[1]*dt, 0.0, alpha)
+
+    # Stop the evolution (after 200 steps) if it reaches 0
+    if B_for[step]<1e-3 and D_for[step]<1e-3 and B_nn[step]<1e-3 and D_nn[step]<1e-3 \
+      and B_min[step]<1e-3 and D_min[step]<1e-3:
+      early_stopping_counter += 1
+    else:
+      early_stopping_counter = 0
+
+    if early_stopping_counter >= 200:
+      n_steps = step
+      B_min = B_min[:step]
+      D_min = D_min[:step]
+      B_for = B_for[:step]
+      D_for = D_for[:step]
+      B_nn = B_nn[:step]
+      D_nn = D_nn[:step]
+      print('Early stopping: Zero reached for all state variables.')
+      break
+
+  # Redefine the number of years and create the time vector
+  n_years = dt*n_steps
+  t = np.linspace(0, n_years, n_steps)
+
 
   # Plot D(t), B(t) and g(t)
   fig, axs = plt.subplots(3, 1, figsize = (10,7.5))
 
-  if isinstance(X_ev, str):
-    axs[1].fill_between(t, (B_det-B_std)[:n_steps], (B_det+B_std)[:n_steps],
-                  color='lightskyblue', alpha = 0.3, linewidth=0)
-    axs[0].fill_between(t, (D_det-D_std)[:n_steps], (D_det+D_std)[:n_steps], 
-                    color='lightskyblue', alpha = 0.3, linewidth=0)
-
-  axs[0].plot(t, D_steps, '--c', label = 'Minimal model')
-  axs[0].plot(t, D_det[:n_steps], '-b', label = 'Detailed model')
+  axs[0].plot(t, D_min, '-b', label = 'Minimal model')
   axs[0].plot(t, D_nn, '-r', label = 'Neural network')
   axs[0].plot(t, D_for, '-g', label = 'Random forests')
   axs[0].set_ylim(0)
@@ -87,8 +98,7 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
   axs[0].tick_params(axis="both", which="both", direction="in", 
                          top=True, right=True)
 
-  axs[1].plot(t, B_steps, '--c')
-  axs[1].plot(t, B_det[:n_steps], '-b')
+  axs[1].plot(t, B_min, '-b')
   axs[1].plot(t, B_nn, '-r')
   axs[1].plot(t, B_for, '-g')
   axs[1].set_ylim(0)
@@ -107,22 +117,14 @@ def system_evolution(nnetwork, rforest, X_ev, iter_count=None):
 
   fig.patch.set_alpha(1)
   plt.setp(axs, xlim=(0, n_years))
-  if isinstance(X_ev, str):
-    plt.savefig(f'results/system_evolution_{X_ev}.png')
-  else:
-    plt.savefig(f'results/system_evolution_train_{iter_count}.png')
+  plt.savefig(paths.figures / f'system_evolution_{X_ev}.png')
+
   print(f'Sim {iter_count}: Successfully completed system evolution.')
 
   # Save the results
-  saved_vars = [B_det[:n_steps], B_steps, B_for, B_nn, D_det[:n_steps], D_steps, D_for, D_nn, g_ev[:n_steps], t]
-  header_vars = 'B_det,B_steps,B_for,B_nn,D_det,D_steps,D_for,D_nn,g,t'
-
-  if isinstance(X_ev, str):
-    saved_vars.extend([B_std[:n_steps], D_std[:n_steps]])
-    header_vars += ',B_std,D_std'
-    file_path = f'results/system_evolution_{X_ev}.csv'
-  else:
-    file_path = f'results/system_evolution_train_{iter_count}.csv'
+  saved_vars = [B_min, B_for, B_nn, D_min, D_for, D_nn, g_ev[:n_steps], t]
+  header_vars = 'B_min,B_for,B_nn,D_min,D_for,D_nn,g,t'
+  file_path = paths.outputs / f'system_evolution_{X_ev}.csv'
 
   np.savetxt(file_path, np.column_stack(saved_vars), delimiter=',', header = header_vars)
 

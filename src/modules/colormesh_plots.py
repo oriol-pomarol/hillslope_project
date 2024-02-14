@@ -1,16 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-import pandas as pd
-import matplotlib.ticker as tck
+from config import paths
 
-def colormesh_plots(X_train, y_train):
+def colormesh_plots():
+
+  # Load the training data
+  X_train = np.load(paths.processed_data / 'X_train.npy')
+  y_train = np.load(paths.processed_data / 'y_train.npy')
 
   # Set the parameters
   n_bins = 24
   B_max = 3
-  D_max = 0.6
-  g_range = (1.76-0.1,1.76+0.1)
+  D_max = 0.4
+  g_range = (0,3)
 
   # Initialize the variables for observations, mean and standard deviations 
   obs = np.zeros((n_bins, n_bins), dtype = np.int32)
@@ -51,7 +54,7 @@ def colormesh_plots(X_train, y_train):
                      f"({n_obs*100/X_train.shape[0]:.2f}% of training data).")
 
   fig.colorbar(mesh, label = "Number of observations")
-  plt.savefig('results/colormesh_plot_obs.png')
+  plt.savefig(paths.figures / 'colormesh_plot_obs.png')
 
   # Plot the mean rate of change per combination of B and D
   fig, axs = plt.subplots(1, 2, figsize = (20,7))
@@ -68,7 +71,7 @@ def colormesh_plots(X_train, y_train):
   axs[1].set_ylabel("Biomass (B)")
   fig.colorbar(mesh_1, label = "Mean dD/dt", ax=axs[1])
 
-  plt.savefig('results/colormesh_plot_mean.png')
+  plt.savefig(paths.figures / 'colormesh_plot_mean.png')
 
   # Plot the std of the rate of change per combination of B and D
   fig, axs = plt.subplots(1, 2, figsize = (20,7))
@@ -86,7 +89,7 @@ def colormesh_plots(X_train, y_train):
   fig.colorbar(mesh_1, label = "Std. dD/dt", ax=axs[1])
 
   plt.text(2, 0, "This is a comment")
-  plt.savefig('results/colormesh_plot_std.png')
+  plt.savefig(paths.figures / 'colormesh_plot_std.png')
 
   # Add a couple lines to the summary with the system evolution parameters
   colormesh_summary = "".join(['\n\n***COLORMESH PLOTS***',
