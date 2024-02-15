@@ -137,9 +137,10 @@ def data_generation():
 ##############################################################################
 
 def data_loading():
-    # Initialize lists to store X and y arrays
+  # Initialize lists to store X and y arrays
   X_list = []
   y_list = []
+  before_jump_list = []
 
   # Load the data
   data_path = paths.raw_data / cfg.data_folder
@@ -163,16 +164,18 @@ def data_loading():
       y_sim = np.column_stack((X_sim[1:,0] - X_sim[:-1,0], X_sim[1:,1] - X_sim[:-1,1]))
       X_sim = X_sim[:-1]
 
+      # Define the mask for the data before a jump
+      before_jump = np.roll(jumps, shift=-1)
+      before_jump = before_jump[:-1]
+
       # Append the data to the lists
       X_list.append(X_sim)
       y_list.append(y_sim)
+      before_jump_list.append(before_jump)
 
   # Concatenate all the data
   X = np.concatenate(X_list, axis=0)
   y = np.concatenate(y_list, axis=0)
-
-  # Select data before jumps
-  before_jump = np.roll(jumps, shift=-1)
-  before_jump = before_jump[:-1]
+  before_jump = np.concatenate(before_jump_list, axis=0)
 
   return X, y, before_jump
