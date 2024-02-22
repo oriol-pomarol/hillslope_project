@@ -12,10 +12,13 @@ class main:
 class data_preparation:
 
     # DATA SOURCE
-    data_source: str = 'minimal'    # 'detailed' or 'minimal'
+    data_source: str = 'detailed'    # 'detailed' or 'minimal'
 
     # DATA LOADING (if data_source == 'detailed')
     data_folder: str = 'detailed_jp' # Name of the folder where the data is located
+    load_all: bool = True            # Load all simulations
+    first_sim: int = 0               # First simulation to load (ignored if load_all is True)
+    last_sim: int = 1000             # Last simulation to load (ignored if load_all is True)
 
     # DATA GENERATION (if data_source == 'minimal')
     n_sim: int = 1000               # Number of simulations to generate
