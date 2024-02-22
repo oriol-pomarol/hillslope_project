@@ -5,9 +5,9 @@ from config import paths
 
 def colormesh_plots():
 
-  # Load the training data
-  X_train = np.load(paths.processed_data / 'X_train.npy')
-  y_train = np.load(paths.processed_data / 'y_train.npy')
+  # Load the training data from csv files
+  X_train = np.loadtxt(paths.processed_data / 'X_train.csv', delimiter=',')
+  y_train = np.loadtxt(paths.processed_data / 'y_train.csv', delimiter=',')
 
   # Set the parameters
   n_bins = 24

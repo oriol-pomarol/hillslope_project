@@ -7,9 +7,9 @@ from sklearn.metrics import r2_score
 
 def test_eval(nnetwork, rforest):
 
-  # Load the test data
-  X_test = np.load(paths.processed_data / 'X_test.npy')
-  y_test = np.load(paths.processed_data / 'y_test.npy')
+  # Load the test data from csv files
+  X_test = np.loadtxt(paths.processed_data / 'X_test.csv', delimiter=',')
+  y_test = np.loadtxt(paths.processed_data / 'y_test.csv', delimiter=',')
 
   print('Starting RF test set evaluation...')
   y_pred_for = rforest.predict(X_test)
@@ -54,9 +54,9 @@ def test_eval(nnetwork, rforest):
   # Calculate R² value for RF for each plot and add it to the plot
   r2_for_0 = r2_score(y_test[:,0], y_pred_for[:,0])
   r2_for_1 = r2_score(y_test[:,1], y_pred_for[:,1])
-  axs[0].text(0.05, 0.95, f'R² = {r2_for_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
-  axs[1].text(0.05, 0.95, f'R² = {r2_for_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
-  plt.savefig(paths.figures / 'predicted_vs_true_rf.png')
+  axs[0].text(0.05, 0.95, f'R² = {r2_for_0:.2e}', transform=axs[0].transAxes, verticalalignment='top')
+  axs[1].text(0.05, 0.95, f'R² = {r2_for_1:.2e}', transform=axs[1].transAxes, verticalalignment='top')
+  plt.savefig(paths.figures / 'test_predicted_vs_true_rf.png')
 
   
   print('Successfully completed RF test set evaluation.')
@@ -108,9 +108,9 @@ def test_eval(nnetwork, rforest):
   # Calculate R² value for NN for each plot and add it to the plot
   r2_nn_0 = r2_score(y_test[:,0], y_pred_nn[:,0])
   r2_nn_1 = r2_score(y_test[:,1], y_pred_nn[:,1])
-  axs[0].text(0.05, 0.95, f'R² = {r2_nn_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
-  axs[1].text(0.05, 0.95, f'R² = {r2_nn_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
-  plt.savefig(paths.figures / 'predicted_vs_true_nn.png')
+  axs[0].text(0.05, 0.95, f'R² = {r2_nn_0:.2e}', transform=axs[0].transAxes, verticalalignment='top')
+  axs[1].text(0.05, 0.95, f'R² = {r2_nn_1:.2e}', transform=axs[1].transAxes, verticalalignment='top')
+  plt.savefig(paths.figures / 'test_predicted_vs_true_nn.png')
 
   # Save the results
   np.savez(paths.outputs / 'test_evaluation.npz', y_test=y_test, y_pred_for=y_pred_for, y_pred_nn=y_pred_nn)

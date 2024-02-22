@@ -7,11 +7,11 @@ from config import paths
 
 def train_eval(rforest, nnetwork):
 
-  # Load the training and validation data
-  X_train = np.load(paths.processed_data / 'X_train.npy')
-  X_val = np.load(paths.processed_data / 'X_val.npy')
-  y_train = np.load(paths.processed_data / 'y_train.npy')
-  y_val = np.load(paths.processed_data / 'y_val.npy')
+  # Load the training and validation data from csv files
+  X_train = np.loadtxt(paths.processed_data / 'X_train.csv', delimiter=',')
+  X_val = np.loadtxt(paths.processed_data / 'X_val.csv', delimiter=',')
+  y_train = np.loadtxt(paths.processed_data / 'y_train.csv', delimiter=',')
+  y_val = np.loadtxt(paths.processed_data / 'y_val.csv', delimiter=',')
 
   # Evalute RF model on validation and training data
   print('Starting RF train set evaluation...')
@@ -61,8 +61,8 @@ def train_eval(rforest, nnetwork):
   # Add R² value to the plot for RF
   r2_train_for_0 = r2_score(y_train[:,0], y_pred_train_for[:,0])
   r2_train_for_1 = r2_score(y_train[:,1], y_pred_train_for[:,1])
-  axs[0].text(0.05, 0.95, f'R² = {r2_train_for_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
-  axs[1].text(0.05, 0.95, f'R² = {r2_train_for_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
+  axs[0].text(0.05, 0.95, f'R² = {r2_train_for_0:.2e}', transform=axs[0].transAxes, verticalalignment='top')
+  axs[1].text(0.05, 0.95, f'R² = {r2_train_for_1:.2e}', transform=axs[1].transAxes, verticalalignment='top')
   plt.savefig(paths.figures / 'train_predicted_vs_true_rf.png')
 
   # Evalute NN model on validation and training data
@@ -112,8 +112,8 @@ def train_eval(rforest, nnetwork):
   # Add R² value to the plot for NN
   r2_train_nn_0 = r2_score(y_train[:,0], y_pred_train_nn[:,0])
   r2_train_nn_1 = r2_score(y_train[:,1], y_pred_train_nn[:,1])
-  axs[0].text(0.05, 0.95, f'R² = {r2_train_nn_0:.2f}', transform=axs[0].transAxes, verticalalignment='top')
-  axs[1].text(0.05, 0.95, f'R² = {r2_train_nn_1:.2f}', transform=axs[1].transAxes, verticalalignment='top')
+  axs[0].text(0.05, 0.95, f'R² = {r2_train_nn_0:.2e}', transform=axs[0].transAxes, verticalalignment='top')
+  axs[1].text(0.05, 0.95, f'R² = {r2_train_nn_1:.2e}', transform=axs[1].transAxes, verticalalignment='top')
   plt.savefig(paths.figures / 'train_predicted_vs_true_nn.png')
 
   return rf_train_summary, nn_train_summary

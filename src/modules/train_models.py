@@ -14,11 +14,11 @@ from config import paths
 
 def train_models(mode='all'):
 
-  # Load the training and validation data
-  X_train = np.load(paths.processed_data / 'X_train.npy')
-  X_val = np.load(paths.processed_data / 'X_val.npy')
-  y_train = np.load(paths.processed_data / 'y_train.npy')
-  y_val = np.load(paths.processed_data / 'y_val.npy')
+  # Load the training and validation data from csv files
+  X_train = np.loadtxt(paths.processed_data / 'X_train.csv', delimiter=',')
+  X_val = np.loadtxt(paths.processed_data / 'X_val.csv', delimiter=',')
+  y_train = np.loadtxt(paths.processed_data / 'y_train.csv', delimiter=',')
+  y_val = np.loadtxt(paths.processed_data / 'y_val.csv', delimiter=',')
 
   # # Shuffle the training data
   # shuffled_indices = np.arange(len(X_train))
