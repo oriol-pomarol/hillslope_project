@@ -163,13 +163,18 @@ def data_loading():
 
   for folder in data_path.iterdir():
     if folder.name.isdigit():
+
+      # Skip the simulation if load_all is False and it is out of range
+      if not(cfg.load_all or (cfg.first_sim <= int(folder.name) <= cfg.last_sim)):
+        continue
+        
       print(f'Loading data from simulation {folder.name}')
 
       # Load the files
-      biomass = np.loadtxt(folder / 'biomass.tss')[:,1]
-      soil_depth = np.loadtxt(folder / 'soildepth.tss')[:,1]
-      jumps = np.loadtxt(folder / 'statevars_jumped.tss')[:,1].astype(bool)
-      grazing_pressure = np.load(folder / 'grazing.npy') * 24 * 365
+      biomass = np.loadtxt(folder / 'biomass.tss')[25:-1,1]
+      soil_depth = np.loadtxt(folder / 'soildepth.tss')[25:-1,1]
+      jumps = np.loadtxt(folder / 'statevars_jumped.tss')[25:-1,1].astype(bool)
+      grazing_pressure = np.load(folder / 'grazing.npy')[25:-1] * 24 * 365
 
       # Retrieve X from the data
       raw_X_sim = np.column_stack((biomass, soil_depth, grazing_pressure))
