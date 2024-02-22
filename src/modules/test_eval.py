@@ -8,8 +8,10 @@ from sklearn.metrics import r2_score
 def test_eval(nnetwork, rforest):
 
   # Load the test data from csv files
-  X_test = np.loadtxt(paths.processed_data / 'X_test.csv', delimiter=',')
-  y_test = np.loadtxt(paths.processed_data / 'y_test.csv', delimiter=',')
+  X_test = np.loadtxt(paths.processed_data / 'X_test.csv',
+                      delimiter=",", skiprows=1)
+  y_test = np.loadtxt(paths.processed_data / 'y_test.csv',
+                      delimiter=",", skiprows=1)
 
   print('Starting RF test set evaluation...')
   y_pred_for = rforest.predict(X_test)
@@ -100,7 +102,6 @@ def test_eval(nnetwork, rforest):
   axs[1].autoscale()
 
   fig.colorbar(h0[3], ax=axs[0])
-  print(min(y_test[:,1]), max(y_test[:,1]), min(y_pred_nn[:,1]), max(y_pred_nn[:,1]))
   fig.colorbar(h1[3], ax=axs[1])
   fig.suptitle('Neural network')
   fig.patch.set_alpha(1)

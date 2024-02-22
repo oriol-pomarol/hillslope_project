@@ -57,13 +57,23 @@ def data_preparation():
   X_val, y_val = data[val_mask, :3], data[val_mask, 3:5]
   X_test, y_test = data[test_mask, :3], data[test_mask, 3:5]
 
+  # Define headers for the data
+  header_X = 'biomass (B), soil_depth (D), grazing_pressure (g)'
+  header_y = 'dB_dt, dD_dt'
+
   # Save the processed data to individual csv files
-  np.savetxt(paths.processed_data / 'X_train.csv', X_train, delimiter=",")
-  np.savetxt(paths.processed_data / 'X_val.csv', X_val, delimiter=",")
-  np.savetxt(paths.processed_data / 'X_test.csv', X_test, delimiter=",")
-  np.savetxt(paths.processed_data / 'y_train.csv', y_train, delimiter=",")
-  np.savetxt(paths.processed_data / 'y_val.csv', y_val, delimiter=",")
-  np.savetxt(paths.processed_data / 'y_test.csv', y_test, delimiter=",")
+  np.savetxt(paths.processed_data / 'X_train.csv', X_train,
+             delimiter=",", header=header_X)
+  np.savetxt(paths.processed_data / 'X_val.csv', X_val,
+              delimiter=",", header=header_X)
+  np.savetxt(paths.processed_data / 'X_test.csv', X_test,
+              delimiter=",", header=header_X)
+  np.savetxt(paths.processed_data / 'y_train.csv', y_train,
+              delimiter=",", header=header_y)
+  np.savetxt(paths.processed_data / 'y_val.csv', y_val,
+              delimiter=",", header=header_y)
+  np.savetxt(paths.processed_data / 'y_test.csv', y_test,
+              delimiter=",", header=header_y)
   
   # Make the summary of the outputs
   dp_summary = "".join(['\n\nDATA PREPARATION:',
