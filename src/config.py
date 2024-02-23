@@ -6,7 +6,7 @@ class main:
     model_training: str = 'all' # 'none', 'rf', 'nn' or 'all'.
     model_evaluation: str = 'all'   # 'none', 'train', 'test' or 'all'
     fwd_sim: tuple = ()  # [0,1,2,...,'val_data_sin','val_data_lin']
-    plots: tuple = ()    # ['surface', 'colormesh', 'tipping']
+    plots: tuple = ('surface', 'colormesh')    # ['surface', 'colormesh', 'tipping']
 
 @dataclass(frozen=True)
 class data_preparation:
@@ -43,12 +43,15 @@ class model_training:
 
 @dataclass(frozen=True)
 class paths:
+    # ROOT PATH
+    root: Path = Path(__file__).resolve().parents[1]
+
     # DATA PATHS
-    raw_data: Path = Path('data/raw')
-    processed_data: Path = Path('data/processed')
-    temp_data: Path = Path('data/temp')
+    raw_data: Path = root / 'data' / 'raw'
+    processed_data: Path = root / 'data' / 'processed'
+    temp_data: Path = root / 'data' / 'temp'
 
     # RESULTS PATHS
-    figures: Path = Path('results/figures')
-    outputs: Path = Path('results/outputs')
-    models: Path = Path('results/models')
+    figures: Path = root / 'results' / 'figures'
+    outputs: Path = root / 'results' / 'outputs'
+    models: Path = root / 'results' / 'models'
