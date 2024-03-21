@@ -3,10 +3,10 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class main:
-    model_training: str = 'all' # 'none', 'rf', 'nn' or 'all'.
-    model_evaluation: str = 'all'   # 'none', 'train', 'test' or 'all'
-    fwd_sim: tuple = ()  # [0,1,2,...,'val_data_sin','val_data_lin']
-    plots: tuple = ('surface', 'colormesh')    # ['surface', 'colormesh', 'tipping']
+    model_training: str = 'none'    # 'none', 'rf', 'nn' or 'all'.
+    model_evaluation: str = 'none'  # 'none', 'train', 'test' or 'all'
+    fwd_sim: tuple = ('train_no_jumps',) # ['val_data_sin','val_data_lin']
+    plots: tuple = ()   # ['surface', 'colormesh', 'tipping']
 
 @dataclass(frozen=True)
 class data_preparation:
@@ -35,14 +35,26 @@ class data_preparation:
 
 @dataclass(frozen=True)
 class model_training:
+
     # TUNING PARAMETERS
     tuning_size: float = 0.1
     tuning_hp_name: str = 'units'
     tuning_hp_vals: tuple = ()
         
+@dataclass(frozen=True)
+class forward_simulation:
+
+    # PREPROCESSING
+    fwd_data_folder: str = 'fwd_sim'
+
+    # SIMULATION PARAMETERS
+    max_years = 10000   # maximum number of years to simulate
+    freq_progress = 0.2 # frequency of progress updates
+
 
 @dataclass(frozen=True)
 class paths:
+
     # ROOT PATH
     root: Path = Path(__file__).resolve().parents[1]
 

@@ -12,7 +12,7 @@ from modules.data_preparation import data_preparation
 from modules.train_models import train_models
 from modules.test_eval import test_eval
 from modules.train_eval import train_eval
-from modules.system_evolution import system_evolution
+from modules.forward_simulation import forward_simulation
 from modules.surface_plots import surface_plots
 from modules.colormesh_plots import colormesh_plots
 from modules.tipping_evolution import tipping_evolution
@@ -28,8 +28,8 @@ run_summary = ""
 
 # Prepare the data for training
 print('Preparing the data...')
-data_summary = data_preparation()
-run_summary += data_summary
+# data_summary = data_preparation()
+# run_summary += data_summary
 print('Successfully prepared the data...')
 
 # Train the models if specified
@@ -82,8 +82,10 @@ if 'tipping' in cfg.plots:
 
 # Make a prediction of the evolution of the system for each simulation in X_ev
 ev_summary = '\n\n***SYSTEM EVOLUTION***'
-for i,sim in enumerate(cfg.fwd_sim):
-  ev_summary += system_evolution(nnetwork, rforest, sim, i)
+for i, sim_name in enumerate(cfg.fwd_sim):
+  print(f'Running simulation {i+1} of {len(cfg.fwd_sim)}...')
+  ev_summary += forward_simulation(nnetwork, rforest, sim_name)
+print('Successfully ran all simulations.')
 run_summary += ev_summary
 
 # Print execution time
