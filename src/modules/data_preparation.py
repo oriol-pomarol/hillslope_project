@@ -162,41 +162,44 @@ def data_loading():
   data_path = paths.raw_data / cfg.data_folder
 
   for folder in data_path.iterdir():
-    if folder.name.isdigit():
 
-      # Skip the simulation if load_all is False and it is out of range
-      if not(cfg.load_all or (cfg.first_sim <= int(folder.name) <= cfg.last_sim)):
-        continue
-        
-      print(f'Loading data from simulation {folder.name}')
+    # Skip the folder if its name is not a digit
+    if not folder.name.isdigit():
+      continue
 
-      # Load the files
-      biomass = np.loadtxt(folder / 'biomass.tss')[25:-1,1]
-      soil_depth = np.loadtxt(folder / 'soildepth.tss')[25:-1,1]
-      jumps = np.loadtxt(folder / 'statevars_jumped.tss')[25:-1,1].astype(bool)
-      grazing_pressure = np.load(folder / 'grazing.npy')[25:-1] * 24 * 365
+    # Skip the folder if load_all is False and it is out of range
+    if not(cfg.load_all or (cfg.first_sim <= int(folder.name) <= cfg.last_sim)):
+      continue
+      
+    print(f'Loading data from simulation {folder.name}')
 
-      # Retrieve X from the data
-      raw_X_sim = np.column_stack((biomass, soil_depth, grazing_pressure))
+    # Load the files
+    biomass = np.loadtxt(folder / 'biomass.tss')[25:-1,1]
+    soil_depth = np.loadtxt(folder / 'soildepth.tss')[25:-1,1]
+    jumps = np.loadtxt(folder / 'statevars_jumped.tss')[25:-1,1].astype(bool)
+    grazing_pressure = np.load(folder / 'grazing.npy')[25:-1] * 24 * 365
 
-      # Pool the results by 26 steps
-      X_sim = raw_X_sim.reshape(-1, 26, 3)
-      X_sim = np.apply_along_axis(np.median, axis=1, arr=X_sim)
-      jumps = jumps[::26]
+    # Retrieve X from the data
+    raw_X_sim = np.column_stack((biomass, soil_depth, grazing_pressure))
 
-      # Define the output, and remove the last step from X to match the output
-      y_sim = np.column_stack((X_sim[1:,0] - X_sim[:-1,0], X_sim[1:,1] - X_sim[:-1,1]))
-      X_sim = X_sim[:-1]
+    # Pool the results by 26 steps
+    X_sim = raw_X_sim.reshape(-1, 26, 3)
+    X_sim = np.apply_along_axis(np.median, axis=1, arr=X_sim)
+    jumps = jumps[::26]
 
-      # Define the mask for the data before a jump
-      before_jump = np.roll(jumps, shift=-1)
-      before_jump = before_jump[:-1]
+    # Define the output, and remove the last step from X to match the output
+    y_sim = np.column_stack((X_sim[1:,0] - X_sim[:-1,0], X_sim[1:,1] - X_sim[:-1,1]))
+    X_sim = X_sim[:-1]
 
-      # Concatenate all the data from the simulation together
-      sim_data = np.column_stack((X_sim, y_sim))
+    # Define the mask for the data before a jump
+    before_jump = np.roll(jumps, shift=-1)
+    before_jump = before_jump[:-1]
 
-      # Append the data to the lists
-      before_jump_list.append(before_jump)
-      sim_data_list.append(sim_data)
+    # Concatenate all the data from the simulation together
+    sim_data = np.column_stack((X_sim, y_sim))
+
+    # Append the data to the lists
+    before_jump_list.append(before_jump)
+    sim_data_list.append(sim_data)
 
   return sim_data_list, before_jump_list
