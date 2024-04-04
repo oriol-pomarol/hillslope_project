@@ -1,11 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
+import joblib as jb
+from keras.models import load_model
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from config import paths
 
 def train_eval(rforest, nnetwork):
+
+  # Load the models
+  nnetwork = load_model(paths.models / 'nn_model.h5', compile=False)
+  rforest = jb.load(paths.models / 'rf_model.joblib')
 
   # Load the training and validation data from csv files
   X_train = np.loadtxt(paths.processed_data / 'X_train.csv',

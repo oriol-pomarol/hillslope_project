@@ -3,22 +3,22 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class main:
-    model_training: str = 'none'    # 'none', 'rf', 'nn' or 'all'.
-    model_evaluation: str = 'none'  # 'none', 'train', 'test' or 'all'
-    fwd_sim: tuple = ('train_no_jumps',) # ['val_data_sin','val_data_lin']
-    plots: tuple = ()   # ['surface', 'colormesh', 'tipping']
+    model_training: str = 'all'    # 'none', 'rf', 'nn' or 'all'.
+    model_evaluation: str = 'all'  # 'none', 'train', 'test' or 'all'
+    fwd_sim: tuple = () # ['train_sim', 'test_sim']
+    plots: tuple = ('surface', 'colormesh')   # ['surface', 'colormesh', 'tipping']
 
 @dataclass(frozen=True)
 class data_preparation:
 
     # DATA SOURCE
-    data_source: str = 'detailed'    # 'detailed' or 'minimal'
+    data_source: str = 'minimal'    # 'detailed' or 'minimal'
 
     # DATA LOADING (if data_source == 'detailed')
-    data_folder: str = 'detailed_jp' # Name of the folder where the data is located
-    load_all: bool = True            # Load all simulations
-    first_sim: int = 0               # First simulation to load (ignored if load_all is True)
-    last_sim: int = 1000             # Last simulation to load (ignored if load_all is True)
+    data_folder: str = 'detailed_larger_jumps' # Name of the folder where the data is located
+    load_all: bool = False            # Load all simulations
+    first_sim: int = 1               # First simulation to load (ignored if load_all is True)
+    last_sim: int = 40             # Last simulation to load (ignored if load_all is True)
 
     # DATA GENERATION (if data_source == 'minimal')
     n_sim: int = 1000               # Number of simulations to generate
@@ -28,10 +28,10 @@ class data_preparation:
     prob_new_g: float = 0.002       # Probability of jumping to a new g value
 
     # DATA FORMATTING
-    mask_zeroes: bool = True        # Mask zeroes in the data
-    test_size: float = 0.2
-    val_size: float = 0.1
-    drop_size: float = 0.0
+    mask_zeroes: bool = True        # Remove zeroes in the data (to speed up training)
+    drop_size: float = 0.999          # Percentage of data to drop (to speed up training)
+    test_size: float = 0.2          # Percentage of data to use for testing
+    val_size: float = 0.1           # Percentage of data to use for validation
 
 @dataclass(frozen=True)
 class model_training:

@@ -1,10 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
+import joblib as jb
+from keras.models import load_model
 from config import forward_simulation as cfg
 from config import paths
 
-def forward_simulation(nnetwork, rforest, sim_name):
+def forward_simulation(sim_name):
+
+  # Load the models
+  nnetwork = load_model(paths.models / 'nn_model.h5', compile=False)
+  rforest = jb.load(paths.models / 'rf_model.joblib')
 
   # Load the simulation data
   sim_data = preprocess_fwd_sim_data(sim_name)

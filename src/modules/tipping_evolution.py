@@ -1,8 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import joblib as jb
+from keras.models import load_model
+from config import paths
 
-def tipping_evolution(model):
+def tipping_evolution(name='nn'):
+
+  # Load the model
+  if name == 'nn':
+    model = load_model(paths.models / 'nn_model.h5', compile=False)
+  elif name == 'rf':
+    model = jb.load(paths.models / 'rf_model.joblib')
 
   # Define some parameters
   g_tipping = 1.93    # value of g at the tipping point, found 1.93 to work well

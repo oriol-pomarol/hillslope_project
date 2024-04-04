@@ -6,9 +6,17 @@ import matplotlib.ticker as tck
 from matplotlib.ticker import FormatStrFormatter
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.colors as mc
+import joblib as jb
+from keras.models import load_model
 from config import paths
 
-def surface_plots(model, name='', g_plot = 1.76):
+def surface_plots(name='nn', g_plot = 1.76):
+
+  # Load the model
+  if name == 'nn':
+    model = load_model(paths.models / 'nn_model.h5', compile=False)
+  elif name == 'rf':
+    model = jb.load(paths.models / 'rf_model.joblib')
 
   #Set the parameters
   scale_surface = 10

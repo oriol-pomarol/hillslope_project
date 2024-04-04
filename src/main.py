@@ -36,30 +36,19 @@ print('Successfully prepared the data...')
 if cfg.model_training != 'none':
   train_models(cfg.model_training)
 
-# Load the models
-nnetwork = load_model(paths.models / 'nn_model.h5', compile=False)
-rf_params = jb.load(paths.models / 'rf_model.joblib')
-
-# Define a variant of the random forest that uses the trees median to predict
-class MedianRandomForestRegressor(RandomForestRegressor):
-  def predict(self, X):
-    return np.median([tree.predict(X) for tree in self.estimators_], axis=0)
-rforest = MedianRandomForestRegressor()
-rforest.__dict__ = rf_params.__dict__
-
 # Load the training summary
 with open(paths.temp_data / 'train_summary.pkl', 'rb') as f:
     rf_summary, nn_summary = pickle.load(f)
 
 # Evaluate the training data specified in model_evaluation
 if (cfg.model_evaluation=='train' or cfg.model_evaluation=='all'):
-  train_summary = train_eval(rforest, nnetwork)
+  train_summary = train_eval()
   rf_summary += train_summary[0]
   nn_summary += train_summary[1]
 
 # Evaluate the test data if set to True
 if (cfg.model_evaluation=='test' or cfg.model_evaluation=='all'):
-  test_summary = test_eval(nnetwork, rforest)
+  test_summary = test_eval()
   rf_summary += test_summary[0]
   nn_summary += test_summary[1]
 
@@ -69,8 +58,8 @@ run_summary += nn_summary
 
 # Plot the predicted rate of change for B and D at critical g if in the plots list
 if 'surface' in cfg.plots:
-  run_summary += surface_plots(nnetwork, name='nn')
-  surface_plots(rforest, name='rf')
+  run_summary += surface_plots('nn')
+  surface_plots('rf')
 
 # Plot colormeshes related to the observations available if in the plots list
 if 'colormesh' in cfg.plots:
@@ -78,13 +67,13 @@ if 'colormesh' in cfg.plots:
 
 # Plot the system evolutionat the tipping point if in the plots list
 if 'tipping' in cfg.plots:
-  run_summary += tipping_evolution(nnetwork)
+  run_summary += tipping_evolution('nn')
 
 # Make a prediction of the evolution of the system for each simulation in X_ev
 ev_summary = '\n\n***SYSTEM EVOLUTION***'
 for i, sim_name in enumerate(cfg.fwd_sim):
   print(f'Running simulation {i+1} of {len(cfg.fwd_sim)}...')
-  ev_summary += forward_simulation(nnetwork, rforest, sim_name)
+  ev_summary += forward_simulation(sim_name)
 print('Successfully ran all simulations.')
 run_summary += ev_summary
 

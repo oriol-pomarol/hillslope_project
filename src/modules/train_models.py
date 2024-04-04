@@ -34,14 +34,9 @@ def train_models(mode='all'):
   if (mode=='rf' or mode=='all'):
     # Start the random forest model training
     print('Starting Random Forest training...')
-    rforest = RandomForestRegressor(n_estimators = 200,
-                                    max_features = 'sqrt',
-                                    max_samples = 0.4,
-                                    min_samples_leaf = 2,
-                                    min_samples_split = 20)
+    rforest = RandomForestRegressor()
     train_rf_start = time.time()
     rforest.fit(X_train, y_train)
-
     train_rf_end = time.time()
     train_rf_time = (train_rf_end - train_rf_start)/60
     print('RF training time: {:.3g} minutes.'.format(train_rf_time))
@@ -71,7 +66,7 @@ def train_models(mode='all'):
 
     # Set the hyperparameters
     hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu',
-          'learning_rate':1E-5, 'batch_size':128, 'l1_reg':1e-5, 'n_epochs':200}
+          'learning_rate':1E-5, 'batch_size':128, 'l1_reg':1e-5, 'n_epochs':2}
 
     if cfg.tuning_hp_vals:
       print('Starting hyperparameter tuning...')
