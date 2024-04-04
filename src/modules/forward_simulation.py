@@ -29,6 +29,7 @@ def forward_simulation(nnetwork, rforest, sim_name):
   B_true = B_true[:n_steps]
   D_true = D_true[:n_steps]
   g = g[:n_steps]
+  jumps = jumps[:n_steps]
 
   # Allow the system to evolve
   for step in range(1,n_steps):
@@ -61,23 +62,41 @@ def forward_simulation(nnetwork, rforest, sim_name):
   # Plot D(t), B(t) and g(t)
   fig, axs = plt.subplots(3, 1, figsize = (10,7.5))
 
-  axs[0].plot(t, D_true, '-b', label = 'Target values')
-  axs[0].plot(t, D_nn, '-r', label = 'Neural network')
-  axs[0].plot(t, D_for, '-g', label = 'Random forest')
+  start = 0
+  for i in range(len(jumps)):
+    if jumps[i]:
+      axs[0].plot(t[start:i], D_true[start:i], '-b')
+      axs[0].plot(t[start:i], D_nn[start:i], '-r')
+      axs[0].plot(t[start:i], D_for[start:i], '-g')
+      axs[0].axvline(x=t[i], color='k')
+
+      axs[1].plot(t[start:i], B_true[start:i], '-b')
+      axs[1].plot(t[start:i], B_nn[start:i], '-r')
+      axs[1].plot(t[start:i], B_for[start:i], '-g')
+      axs[1].axvline(x=t[i], color='k')
+
+      start = i
+
+  # Plot the last segment
+  axs[0].plot(t[start:], D_true[start:], '-b')
+  axs[0].plot(t[start:], D_nn[start:], '-r')
+  axs[0].plot(t[start:], D_for[start:], '-g')
+
+  axs[1].plot(t[start:], B_true[start:], '-b')
+  axs[1].plot(t[start:], B_nn[start:], '-r')
+  axs[1].plot(t[start:], B_for[start:], '-g')
+
   axs[0].set_ylim(0)
   axs[0].set_ylabel('soil thickness')
   axs[0].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
   axs[0].tick_params(axis="both", which="both", direction="in", 
-                         top=True, right=True)
+             top=True, right=True)
 
-  axs[1].plot(t, B_true, '-b')
-  axs[1].plot(t, B_nn, '-r')
-  axs[1].plot(t, B_for, '-g')
   axs[1].set_ylim(0)
   axs[1].set_ylabel('biomass')
   axs[1].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
   axs[1].tick_params(axis="both", which="both", direction="in", 
-                         top=True, right=True)
+             top=True, right=True)
 
   axs[2].plot(t, g, '-b')
   axs[2].set_ylim(0)
@@ -85,15 +104,17 @@ def forward_simulation(nnetwork, rforest, sim_name):
   axs[2].set_xlabel('time (years)')
   axs[2].yaxis.set_minor_locator(tck.AutoMinorLocator(2))
   axs[2].tick_params(axis="both", which="both", direction="in", 
-                         top=True, right=True)
+             top=True, right=True)
 
   fig.patch.set_alpha(1)
   plt.setp(axs, xlim=(0, n_years))
   plt.savefig(paths.figures / f'fwd_sim_{sim_name}.png')
 
   # Save the results
-  save_vars = {'t': t, 'B_true': B_true, 'D_true': D_true, 'g': g,
-               'B_for': B_for, 'D_for': D_for, 'B_nn': B_nn, 'D_nn': D_nn}
+  save_vars = {'t': t, 'jumps': jumps, 'g': g,
+               'B_true': B_true, 'D_true': D_true,
+               'B_for': B_for, 'D_for': D_for,
+               'B_nn': B_nn, 'D_nn': D_nn}
   file_path = paths.outputs / f'fwd_sim_{sim_name}.csv'
 
   # Convert to 2D array and names list for saving
@@ -104,26 +125,22 @@ def forward_simulation(nnetwork, rforest, sim_name):
   np.savetxt(file_path, save_vars_arr, delimiter=',', header=save_vars_names)
 
   # Compute the Pearson correlation coefficients
-  r_for = np.corrcoef(B_true, B_for)[0, 1], np.corrcoef(D_true, D_for)[0, 1]
-  r_nn = np.corrcoef(B_true, B_nn)[0, 1], np.corrcoef(D_true, D_nn)[0, 1]
+  r_for_B, r_nn_B = weighted_corr(jumps, B_true, B_for, B_nn)
+  r_for_D, r_nn_D = weighted_corr(jumps, D_true, D_for, D_nn)
 
   # Add a couple lines to the summary with the system evolution parameters
   evolution_summary = "".join(['\n\nSimulation {}:'.format(sim_name),
                                '\ntime_step = {}'.format(dt),
                                '\nn_years = {}'.format(n_years),
-                               '\npearson_corr_for = {}'.format(r_for),
-                               '\npearson_corr_nn = {}'.format(r_nn)])
+                               '\npearson_corr_for = {}'.format((r_for_B, r_for_D)),
+                               '\npearson_corr_nn = {}'.format((r_nn_B, r_nn_D))])
   return evolution_summary
 
 ##############################################################################
 
 def preprocess_fwd_sim_data(sim_name):
-  
-  # What folder to load the data from
-  i = 1
-
   # Load the simulation data
-  folder = paths.raw_data / cfg.fwd_data_folder / sim_name / str(i)
+  folder = paths.raw_data / cfg.fwd_data_folder / sim_name
   biomass = np.loadtxt(folder / 'biomass.tss')[25:-1,1]
   soil_depth = np.loadtxt(folder / 'soildepth.tss')[25:-1,1]
   grazing_pressure = np.load(folder / 'grazing.npy')[25:-1] * 24 * 365
@@ -133,7 +150,7 @@ def preprocess_fwd_sim_data(sim_name):
     jumps = np.loadtxt(folder / 'statevars_jumped.tss')[25:-1,1].astype(bool)
   except FileNotFoundError:
     jumps = np.zeros_like(biomass, dtype=bool)
-    print(f'WARNING: No jumps file found for {sim_name} in folder {i}.')
+    print(f'WARNING: No jumps file found for {sim_name}.')
 
   # Retrieve X from the data
   raw_X_sim = np.column_stack((biomass, soil_depth, grazing_pressure))
@@ -144,8 +161,34 @@ def preprocess_fwd_sim_data(sim_name):
   jumps = jumps[::26]
 
   # Join into 2D array and save to csv
-  sim_data = np.column_stack((biomass, soil_depth, grazing_pressure, jumps))
+  sim_data = np.column_stack((X_sim, jumps))
   np.savetxt(paths.processed_data / cfg.fwd_data_folder / f'{sim_name}.csv', sim_data,
              delimiter=',', header='B,D,g,jumps', comments='')
   
   return sim_data
+
+##############################################################################
+
+def weighted_corr(jumps, true_data, for_data, nn_data):
+  r_for_segments = []
+  r_nn_segments = []
+  weights = []
+  start = 0
+  for i, jump in enumerate(jumps):
+    if jump:
+      segment_length = i - start
+      if segment_length > 1:
+        r_for_segments.append(np.corrcoef(true_data[start:i], for_data[start:i])[0, 1])
+        r_nn_segments.append(np.corrcoef(true_data[start:i], nn_data[start:i])[0, 1])
+        weights.append(segment_length)
+      else:
+        print(f"Warning: Ignored segment of length {segment_length} at index {start}.")
+      start = i
+  segment_length = len(true_data) - start
+  if segment_length > 1:
+    r_for_segments.append(np.corrcoef(true_data[start:], for_data[start:])[0, 1])
+    r_nn_segments.append(np.corrcoef(true_data[start:], nn_data[start:])[0, 1])
+    weights.append(segment_length)
+  else:
+    print(f"Warning: Ignored segment of length {segment_length} at the end of the data.")
+  return np.average(r_for_segments, weights=weights), np.average(r_nn_segments, weights=weights)

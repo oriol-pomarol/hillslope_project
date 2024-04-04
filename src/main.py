@@ -28,8 +28,8 @@ run_summary = ""
 
 # Prepare the data for training
 print('Preparing the data...')
-# data_summary = data_preparation()
-# run_summary += data_summary
+data_summary = data_preparation()
+run_summary += data_summary
 print('Successfully prepared the data...')
 
 # Train the models if specified
