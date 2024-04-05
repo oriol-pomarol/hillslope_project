@@ -12,7 +12,7 @@ from .surface_plots import surface_plots
 from config import model_training as cfg
 from config import paths
 
-def train_models(mode='all'):
+def model_training(mode='all'):
 
   # Load the training and validation data from csv files
   X_train = np.loadtxt(paths.processed_data / 'X_train.csv',

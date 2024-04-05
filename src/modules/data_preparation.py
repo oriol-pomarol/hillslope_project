@@ -6,6 +6,8 @@ import pandas as pd
 
 def data_preparation():
 
+  print('Preparing the data...')
+
   # Generate the data if the data source is 'minimal'  
   if cfg.data_source == 'minimal':
     sim_data_list, before_jump_list = data_generation()
@@ -83,6 +85,8 @@ def data_preparation():
                         '\ntrain_samples: {}'.format(len(X_train)),
                         '\nval_samples: {}'.format(len(X_val)),
                         '\ntest_samples: {}'.format(len(X_test))])
+  
+  print('Successfully prepared the data...')
   
   return dp_summary
 

@@ -5,7 +5,7 @@ from pathlib import Path
 class main:
     model_training: str = 'all'    # 'none', 'rf', 'nn' or 'all'.
     model_evaluation: str = 'all'  # 'none', 'train', 'test' or 'all'
-    fwd_sim: tuple = () # ['train_sim', 'test_sim']
+    fwd_sim: tuple = () # Folder names for fwd_sim, e.g. ('train_sim', 'test_sim')
     plots: tuple = ('surface', 'colormesh')   # ['surface', 'colormesh', 'tipping']
 
 @dataclass(frozen=True)
