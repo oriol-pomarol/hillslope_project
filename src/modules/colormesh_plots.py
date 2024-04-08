@@ -94,7 +94,7 @@ def colormesh_plots():
   plt.savefig(paths.figures / 'colormesh_plot_std.png')
 
   # Add a couple lines to the summary with the system evolution parameters
-  colormesh_summary = "".join(['\n\n***COLORMESH PLOTS***',
+  colormesh_summary = "".join(['\n\n*COLORMESH PLOTS*',
                                '\nn_bins = {}'.format(n_bins),
                                '\nB_max = {}'.format(B_max),
                                '\nD_max = {}'.format(D_max),

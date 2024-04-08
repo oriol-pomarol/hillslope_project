@@ -167,7 +167,7 @@ def surface_plots(name='nn', g_plot = 1.76):
   print('Successfully saved surface plot results.')
 
   # Add a couple lines to the summary with the system evolution parameters
-  surface_summary = "".join(['\n\n***SURFACE PLOTS***',
+  surface_summary = "".join(['\n\n*SURFACE PLOTS*',
                              '\nn_sq = {}'.format(n_sq),
                              '\nB_lim = {}'.format(B_lim),
                              '\nD_lim = {}'.format(D_lim),

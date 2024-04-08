@@ -78,7 +78,7 @@ def data_preparation():
               delimiter=",", header=header_y)
   
   # Make the summary of the outputs
-  dp_summary = "".join(['\n\nDATA PREPARATION:',
+  dp_summary = "".join(['\n\n*DATA PREPARATION*',
                         '\nn_jumps: {}'.format(np.sum(before_jump)),
                         '\nn_zeroes: {}'.format(np.sum(zeros_mask)),
                         '\nn_dropped: {}'.format(n_dropped),

@@ -19,7 +19,7 @@ print('Successfully imported libraries and modules.')
 start_time = time.time()
 
 # Initialize the summary
-run_summary = ""
+run_summary = "***RUN SUMMARY***"
 
 # Prepare the data for training
 data_summary = data_preparation()

@@ -115,7 +115,7 @@ def model_training(mode='all'):
       
   # Save the training summary
   if (mode=='rf' or mode=='all'):
-    rf_summary = "".join(['\n\n***MODEL TRAINING***',
+    rf_summary = "".join(['\n\n*MODEL TRAINING*',
                           '\n\nRANDOM FOREST:',
                           '\ntrain_rf_time = {:.1f} minutes'.format(train_rf_time),
                           '\nn_estimators = {}'.format(rforest.get_params()['n_estimators']),

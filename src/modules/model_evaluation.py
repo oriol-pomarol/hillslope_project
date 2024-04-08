@@ -107,7 +107,7 @@ def evaluate_set(X, y, rforest, nnetwork, set_name='train'):
   mse_nn = mean_squared_error(y, y_pred_nn)
   print('MSE test set (NN) = {:.5g}'.format(mse_nn))
 
-  nn_summary = '\nmse_test= {}'.format(mse_nn)
+  nn_summary = '\nmse_{}= {}'.format(set_name, mse_nn)
 
 
   # Determine which should be the minimum and maximum width of the bins

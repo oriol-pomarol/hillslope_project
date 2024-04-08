@@ -8,7 +8,7 @@ from config import paths
 
 def forward_simulation(sim_names):
 
-  ev_summary = '\n\n***SYSTEM EVOLUTION***'
+  ev_summary = '\n\n*FORWARD SIMULATION*'
 
   # Load the models
   nnetwork = load_model(paths.models / 'nn_model.h5', compile=False)
@@ -141,7 +141,7 @@ def forward_simulation(sim_names):
     r_for_D, r_nn_D = weighted_corr(jumps, D_true, D_for, D_nn)
 
     # Add a couple lines to the summary with the system evolution parameters
-    ev_summary += "".join(['\n\nSimulation {}:'.format(sim_name),
+    ev_summary += "".join(['\n\nSIMULATION {}:'.format(sim_name),
                            '\ntime_step = {}'.format(dt),
                            '\nn_years = {}'.format(n_years),
                            '\npearson_corr_for = {}'.format((r_for_B, r_for_D)),

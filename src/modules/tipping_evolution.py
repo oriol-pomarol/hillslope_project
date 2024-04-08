@@ -154,7 +154,7 @@ def tipping_evolution(name='nn'):
   plt.savefig(os.path.join('results','tipping_evolution.png'))
 
   # Add a couple lines to the summary with the system evolution parameters
-  t_evolution_summary = "".join(['\n\n***TIPPING EVOLUTION***',
+  t_evolution_summary = "".join(['\n\n*TIPPING EVOLUTION*',
                                  '\ntime_step = {}'.format(dt),
                                  '\nn_steps = {}'.format(n_steps),
                                  '\nB_eq = {}'.format(B_eq),
