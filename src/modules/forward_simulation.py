@@ -16,7 +16,7 @@ def forward_simulation(sim_names):
 
   for sim_idx, sim_name in enumerate(sim_names):
 
-    print(f'Running simulation {sim_idx+1} of {len(cfg.fwd_sim)}...')
+    print(f'Running simulation {sim_idx+1} of {len(sim_names)}...')
 
     # Load the simulation data
     sim_data = preprocess_fwd_sim_data(sim_name)
