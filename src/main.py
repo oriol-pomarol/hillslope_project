@@ -35,7 +35,7 @@ with open(paths.temp_data / 'train_summary.pkl', 'rb') as f:
 
 # Evaluate the data specified in model_evaluation
 if cfg.model_evaluation != 'none':
-  train_summary = model_evaluation()
+  train_summary = model_evaluation(cfg.model_evaluation)
   rf_summary += train_summary[0]
   nn_summary += train_summary[1]
 

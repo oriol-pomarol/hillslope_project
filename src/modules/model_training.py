@@ -24,13 +24,6 @@ def model_training(mode='all'):
   y_val = np.loadtxt(paths.processed_data / 'y_val.csv',
                      delimiter=",", skiprows=1)
 
-  # # Shuffle the training data
-  # shuffled_indices = np.arange(len(X_train))
-  # np.random.shuffle(shuffled_indices)
-  # X_train = np.squeeze(X_train[shuffled_indices])
-  # y_train = np.squeeze(y_train[shuffled_indices])
-  # w_train = np.squeeze(w_train[shuffled_indices])
-
   if (mode=='rf' or mode=='all'):
     # Start the random forest model training
     print('Starting Random Forest training...')
@@ -63,11 +56,11 @@ def model_training(mode='all'):
       loss = K.abs(loss)
       loss = K.sum(loss, axis=1) 
       return loss
+    
+    # Define the hyperparameters
+    hp = cfg.nn_hp
 
-    # Set the hyperparameters
-    hp = {'units':[9, 27, 81, 162, 324, 648, 1296], 'act_fun':'relu',
-          'learning_rate':1E-5, 'batch_size':128, 'l1_reg':1e-5, 'n_epochs':2}
-
+    # Tune the hyperparameters if specified
     if cfg.tuning_hp_vals:
       print('Starting hyperparameter tuning...')
       best_hp = hp_tuning([X_train, X_val, y_train, y_val], hp, custom_mae,
@@ -102,6 +95,7 @@ def model_training(mode='all'):
     plt.ylabel('Custom MSE')
     plt.savefig(paths.figures / 'training_history.png')
 
+    # Calculate the training time and save the model
     train_nn_end = time.time()
     train_nn_time = (train_nn_end - train_nn_start)/60
     print('NN training time: {:.3g} minutes.'.format(train_nn_time))

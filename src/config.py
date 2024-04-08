@@ -36,6 +36,14 @@ class data_preparation:
 @dataclass(frozen=True)
 class model_training:
 
+    # DEFAULT HYPERPARAMETERS
+    nn_hp: dict = {'units':[9, 27, 81, 162, 324, 648, 1296],
+                   'act_fun':'relu',
+                   'learning_rate':1E-5,
+                   'batch_size':128,
+                   'l1_reg':1e-5,
+                   'n_epochs':2}
+
     # TUNING PARAMETERS
     tuning_size: float = 0.1
     tuning_hp_name: str = 'units'
