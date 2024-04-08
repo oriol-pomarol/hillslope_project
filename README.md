@@ -1,56 +1,22 @@
 # Hillslope project
-A data driven discovery of the time transfer function of a semi-arid hillslope ecosystem.
+This project contains the code used to exemplify the data driven discovery of the time transfer function of a semi-arid hillslope ecosystem.
 
 ## Table of Contents
 
 - [Project Overview](#project-overview)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [File Structure](#file-structure)
-- [Contributing](#contributing)
-- [Documentation](#documentation)
-- [License](#license)
-- [Troubleshooting and FAQs](#troubleshooting-and-faqs)
+- [Installation and usage](#installation-and-usage)
 - [Contact Information](#contact-information)
 
 ## Project Overview
 
-[Provide a brief introduction and overview of your project. Explain its purpose, goals, and any relevant background information.]
+In this project, a Random Forest and a Neural Network are used to simulate the aggregate behaviour of vegetation and soil, using data from either a minimal differential equation model, or a spatially detailed simulation model. This enables an evidence-based analysis of the desertification mechanisms. More information in the following EGU abstract: https://doi.org/10.5194/egusphere-egu24-11880.
 
-## Installation
+## Installation and usage
 
-[Provide instructions on how to install and set up the project. Include any dependencies, prerequisites, or configuration instructions.]
+The scripts are all ran in python, so a conda environment will need to be created from the ```environment.yml``` file provided. If needed to run on detailed model data, the training data should be added to the ```data/raw``` folder, and anything that should be used for testing the models in forward simulation should be added to the ```data/raw/fwd_sim``` folder.
 
-## Usage
-
-[Explain how to use the project. Provide examples, code snippets, or command-line instructions to demonstrate the different functionalities or features.]
-
-## Configuration
-
-[If applicable, detail any configuration options available to customize the project's behavior. Explain how to modify or set up environment variables, configuration files, or any other settings.]
-
-## File Structure
-
-[Provide an overview of the project's file structure. Highlight important directories, files, or modules.]
-
-## Contributing
-
-[Explain how others can contribute to the project if it is open-source. Describe the preferred workflow, coding conventions, and instructions for submitting pull requests or bug reports.]
-
-## Documentation
-
-[Provide links or instructions on how to access additional documentation, such as API documentation, user guides, or tutorials.]
-
-## License
-
-[Specify the project's license, including any usage restrictions or permissions.]
-
-## Troubleshooting and FAQs
-
-[Address common issues, error messages, or frequently asked questions. Provide solutions or direct users to relevant resources for further assistance.]
+To configure what and how to run it, one can do so in the ```src/config.py```. An explanation of each of the parameters can be found inside that file. Once the configuration values are set, it is only needed to run the ```src/main.py``` script. The outputs will be stored in each of the subfolders inside the ```results``` folder.
 
 ## Contact Information
 
-[Provide your contact details or a link to the project's official communication channels (e.g., email address, GitHub repository, community forum) so that users or collaborators can reach out with questions or feedback.]
-
+For any questions regarding the code or this project, please contact o.pomarolmoya@uu.nl.
