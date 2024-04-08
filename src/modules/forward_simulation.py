@@ -141,7 +141,7 @@ def forward_simulation(sim_names):
     r_for_D, r_nn_D = weighted_corr(jumps, D_true, D_for, D_nn)
 
     # Add a couple lines to the summary with the system evolution parameters
-    ev_summary += "".join(['\n\nSIMULATION {}:'.format(sim_name),
+    ev_summary += "".join(['\n\nSIMULATION \'{}\':'.format(sim_name),
                            '\ntime_step = {}'.format(dt),
                            '\nn_years = {}'.format(n_years),
                            '\npearson_corr_for = {}'.format((r_for_B, r_for_D)),
@@ -155,7 +155,7 @@ def forward_simulation(sim_names):
 
 def preprocess_fwd_sim_data(sim_name):
   # Load the simulation data
-  folder = paths.raw_data / cfg.fwd_data_folder / sim_name
+  folder = paths.fwd_sim_data / sim_name
   biomass = np.loadtxt(folder / 'biomass.tss')[25:-1,1]
   soil_depth = np.loadtxt(folder / 'soildepth.tss')[25:-1,1]
   grazing_pressure = np.load(folder / 'grazing.npy')[25:-1] * 24 * 365

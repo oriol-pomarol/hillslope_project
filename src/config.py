@@ -6,7 +6,7 @@ from pathlib import Path
 class main:
     model_training: str = 'all'    # 'none', 'rf', 'nn' or 'all'.
     model_evaluation: str = 'all'  # 'none', 'train', 'test' or 'all'
-    fwd_sim: tuple = ('train_sim', 'test_sim') # Folder names for fwd_sim, e.g. ('train_sim', 'test_sim')
+    fwd_sim: tuple = ()   # Folder names in fwd_sim, e.g. ('train_sim', 'test_sim')
     plots: tuple = ('surface', 'colormesh')   # ['surface', 'colormesh', 'tipping']
 
 @dataclass(frozen=True)
@@ -57,12 +57,9 @@ class model_training:
 @dataclass(frozen=True)
 class forward_simulation:
 
-    # PREPROCESSING
-    fwd_data_folder: str = 'fwd_sim'
-
     # SIMULATION PARAMETERS
-    max_years = 100   # maximum number of years to simulate
-    freq_progress = 0.2 # frequency of progress updates
+    max_years = 10   # Maximum number of years to simulate
+    freq_progress = 0.2 # Frequency of progress updates
 
 
 @dataclass(frozen=True)
@@ -73,6 +70,7 @@ class paths:
 
     # DATA PATHS
     raw_data: Path = root / 'data' / 'raw'
+    fwd_sim_data: Path = root / 'data' / 'raw' / 'fwd_sim'
     processed_data: Path = root / 'data' / 'processed'
     temp_data: Path = root / 'data' / 'temp'
 
