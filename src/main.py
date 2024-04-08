@@ -57,12 +57,8 @@ if 'tipping' in cfg.plots:
   run_summary += tipping_evolution('nn')
 
 # Make a prediction of the evolution of the system for each simulation in X_ev
-ev_summary = '\n\n***SYSTEM EVOLUTION***'
-for i, sim_name in enumerate(cfg.fwd_sim):
-  print(f'Running simulation {i+1} of {len(cfg.fwd_sim)}...')
-  ev_summary += forward_simulation(sim_name)
-print('Successfully ran all simulations.')
-run_summary += ev_summary
+if cfg.fwd_sim:
+  run_summary += forward_simulation(cfg.fwd_sim)
 
 # Print execution time
 end_time = time.time()
