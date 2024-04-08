@@ -57,8 +57,7 @@ def model_training(mode='all'):
       loss = K.sum(loss, axis=1) 
       return loss
     
-    # Define the hyperparameters
-    hp = cfg.nn_hp
+    hp = cfg.get_nn_hp()
 
     # Tune the hyperparameters if specified
     if cfg.tuning_hp_vals:
