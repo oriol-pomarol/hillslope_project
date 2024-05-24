@@ -22,8 +22,9 @@ start_time = time.time()
 run_summary = "***RUN SUMMARY***"
 
 # Prepare the data for training
-data_summary = data_preparation()
-run_summary += data_summary
+if cfg.process_data:
+  data_summary = data_preparation()
+  run_summary += data_summary
 
 # Train the models if specified
 if cfg.model_training != 'none':

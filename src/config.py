@@ -4,6 +4,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class main:
+    process_data: bool = True     # Process the data
     model_training: str = 'all'    # 'none', 'rf', 'nn' or 'all'.
     model_evaluation: str = 'all'  # 'none', 'train', 'test' or 'all'
     fwd_sim: tuple = ()   # Folder names in fwd_sim, e.g. ('train_sim', 'test_sim')
@@ -14,6 +15,7 @@ class data_preparation:
 
     # DATA SOURCE
     data_source: str = 'minimal'    # 'detailed' or 'minimal'
+    dt: float = 0.5                 # Time step in years
 
     # DATA LOADING (if data_source == 'detailed')
     data_folder: str = 'detailed_larger_jumps' # Name of the folder where the data is located
@@ -24,7 +26,6 @@ class data_preparation:
     # DATA GENERATION (if data_source == 'minimal')
     n_sim: int = 1000               # Number of simulations to generate
     n_years: int = 10000            # Number of years per simulation
-    dt: float = 0.5                 # Time step in years
     prob_new_state: float = 0.02    # Probability of jumping to a new system state
     prob_new_g: float = 0.002       # Probability of jumping to a new g value
 
