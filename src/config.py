@@ -4,11 +4,11 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class main:
-    process_data: bool = True     # Process the data
-    model_training: str = 'all'    # 'none', 'rf', 'nn' or 'all'.
-    model_evaluation: str = 'all'  # 'none', 'train', 'test' or 'all'
+    process_data: bool = False     # Process the data
+    model_training: str = 'none'    # 'none', 'rf', 'nn' or 'all'.
+    model_evaluation: str = 'none'  # 'none', 'train', 'test' or 'all'
     fwd_sim: tuple = ()   # Folder names in fwd_sim, e.g. ('train_sim', 'test_sim')
-    plots: tuple = ('surface', 'colormesh')   # ['surface', 'colormesh', 'tipping']
+    plots: tuple = ('surface')   # ['surface', 'colormesh', 'tipping']
 
 @dataclass(frozen=True)
 class data_preparation:

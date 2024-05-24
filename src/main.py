@@ -47,7 +47,7 @@ run_summary += nn_summary
 # Plot the predicted rate of change for B and D at critical g if in the plots list
 if 'surface' in cfg.plots:
   run_summary += surface_plots('nn')
-  surface_plots('rf')
+  # surface_plots('rf')
 
 # Plot colormeshes related to the observations available if in the plots list
 if 'colormesh' in cfg.plots:
