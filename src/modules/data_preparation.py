@@ -192,7 +192,7 @@ def data_loading():
     jumps = jumps[::26]
 
     # Define the output, and remove the last step from X to match the output
-    y_sim = np.column_stack((X_sim[1:,0] - X_sim[:-1,0], X_sim[1:,1] - X_sim[:-1,1]))
+    y_sim = np.column_stack((X_sim[1:,0] - X_sim[:-1,0], X_sim[1:,1] - X_sim[:-1,1])) / cfg.dt
     X_sim = X_sim[:-1]
 
     # Define the mask for the data before a jump
