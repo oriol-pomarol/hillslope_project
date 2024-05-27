@@ -13,10 +13,10 @@ from config import paths
 def surface_plots(name='nn', g_plot = 1.76):
 
   #Set the plot parameters
-  scale_surface = 20
-  n_sq = 18 * scale_surface
+  scale_surface = 100
+  n_sq = 24 * scale_surface
   B_lim = 3
-  D_lim = 0.6
+  D_lim = 0.8
   threshold_eq = 1e-3
 
   # Make a grid of B and D values
@@ -35,11 +35,7 @@ def surface_plots(name='nn', g_plot = 1.76):
   Y_pred = model.predict(X_pred).reshape((n_sq, n_sq, -1))
 
   # Find stable and unstable equilibrium points
-  Y_eq = find_eq_points(Y_pred, threshold_eq)
-
-  # Print the stds
-  print('dB/dt std:', np.std(Y_pred[:,:,0]))
-  print('dD/dt std:', np.std(Y_pred[:,:,1]))
+  Y_eq = find_eq_points(Y_pred, threshold_eq, B_grid, D_grid, scale_surface)
 
   # Plot the surfaces
   plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, name)
@@ -47,15 +43,15 @@ def surface_plots(name='nn', g_plot = 1.76):
   # Plot the equilibrium lines
   plot_eq_lines(Y_eq, B_grid, D_grid, name)
 
-  # # Plot the streamplot
-  # plot_stream(Y_pred, B_grid, D_grid, name)
+  # Plot the streamplot
+  plot_stream(Y_pred, B_grid, D_grid, name)
 
-  # # Save the results
-  # print('Saving surface plot results...')
-  # df = pd.DataFrame({'B_grid':B_grid[:,0], 'D_grid':D_grid[:,1],
-  #                    'dB_dt':Y_pred[:,:,0].flatten(), 'dD_dt':Y_pred[:,:,1].flatten()})
-  # df.to_csv(paths.outputs / f'surface_plots_{name}.csv')
-  # print('Successfully saved surface plot results.')
+  # Save the results
+  print('Saving surface plot results...')
+  df = pd.DataFrame({'B_grid':B_grid.flatten(), 'D_grid':D_grid.flatten(),
+                     'dB_dt':Y_pred[:,:,0].flatten(), 'dD_dt':Y_pred[:,:,1].flatten()})
+  df.to_csv(paths.outputs / f'surface_plots_{name}.csv')
+  print('Successfully saved surface plot results.')
 
   # Add a couple lines to the summary with the system evolution parameters
   surface_summary = "".join(['\n\n*SURFACE PLOTS*',
@@ -98,10 +94,13 @@ def load_model(name):
   
   return model
 
-def find_eq_points(Y_pred, threshold_eq):
+def find_eq_points(Y_pred, threshold_eq, B_grid, D_grid, scale_surface):
 
   # Unpack the results
   dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
+
+  # Get the limits of the data
+  B_lim, D_lim = np.max(B_grid), np.max(D_grid)
 
   # Find the equilibrium points given the threshold weighted by the std
   B_eq = np.abs(dB_dt) < threshold_eq * np.std(dB_dt)
@@ -110,12 +109,14 @@ def find_eq_points(Y_pred, threshold_eq):
   # Compute the gradients
   dB_dt_B, dB_dt_D = np.gradient(dB_dt)
   dD_dt_B, dD_dt_D = np.gradient(dD_dt)
+
+  frac = 1 / (24 * scale_surface)
   
   # Find the stable and unstable equilibrium points
-  B_st_eq = B_eq & (dB_dt_B < 0) #& (dB_dt_D < 0)
+  B_st_eq = B_eq & ((dB_dt_B < 0) | (B_grid < frac * B_lim)) #& (dB_dt_D < 0)
   B_un_eq = B_eq & ~B_st_eq
 
-  D_st_eq = D_eq & (dD_dt_D < 0) #& (dD_dt_B < 0 )
+  D_st_eq = D_eq & ((dD_dt_D < 0) | (D_grid < frac * D_lim)) #& (dD_dt_B < 0 )
   D_un_eq = D_eq & ~D_st_eq
 
   # Store the results in a dictionary
@@ -213,23 +214,37 @@ def plot_eq_lines(Y_eq, B_grid, D_grid, name):
   # Get the limits of the data
   B_lim, D_lim = np.max(B_grid), np.max(D_grid)
 
+  # Find the equilibrium points of the whole system
+  Y_eq_st = B_eq['stable'] & D_eq['stable']
+  Y_eq_un = (B_eq['unstable'] & D_eq['unstable']) | \
+            (B_eq['stable'] & D_eq['unstable']) | \
+            (B_eq['unstable'] & D_eq['stable'])
+
   # Plot the equilibrium lines
   fig, ax = plt.subplots(figsize=(16,14))
   ax.xaxis.set_major_locator(plt.MaxNLocator(3))
   ax.yaxis.set_major_locator(plt.MaxNLocator(3, prune='lower'))
 
-  # Plot the equilibrium lines for dB/dt
-  ax.scatter(B_grid[B_eq['unstable']], D_grid[B_eq['unstable']],
-             color='lightgreen', s=5, label='Unstable equilibrium')
-  ax.scatter(B_grid[B_eq['stable']], D_grid[B_eq['stable']],
-              color='green', s=5, label='Stable equilibrium')
+  # Plot the equilibrium lines for dB/dt in green
+  ax.scatter(D_grid[B_eq['unstable']], B_grid[B_eq['unstable']],
+             color='lightgreen', s=10, label='Unstable equilibrium')
+  ax.scatter(D_grid[B_eq['stable']], B_grid[B_eq['stable']],
+              color='green', s=10, label='Stable equilibrium')
   
-  # Plot the equilibrium lines for dD/dt
-  ax.scatter(B_grid[D_eq['unstable']], D_grid[D_eq['unstable']],
-             color='salmon', s=5)
-  ax.scatter(B_grid[D_eq['stable']], D_grid[D_eq['stable']],
-              color='red', s=5)
+  # Plot the equilibrium lines for dD/dt in blue
+  ax.scatter(D_grid[D_eq['unstable']], B_grid[D_eq['unstable']],
+             color='lightblue', s=10, label='Unstable equilibrium')
+  ax.scatter(D_grid[D_eq['stable']], B_grid[D_eq['stable']],
+              color='blue', s=10, label='Stable equilibrium')
   
+  # Plot the points where Y is in usntable equilibrium in yellow
+  ax.scatter(D_grid[Y_eq_un], B_grid[Y_eq_un], color='yellow',
+             s=10, label='Unstable equilibrium')
+  
+  # Plot the points where Y is in stable equilibrium in red
+  ax.scatter(D_grid[Y_eq_st], B_grid[Y_eq_st], color='red',
+             s=10, label='Stable equilibrium')
+
   ax.set_ylim(0, B_lim)
   ax.set_xlim(0, D_lim)
   ax.set_ylabel('Biomass ($kg/m^2$)')
