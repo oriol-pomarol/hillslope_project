@@ -13,11 +13,11 @@ from config import paths
 def surface_plots(name='nn', g_plot = 1.76):
 
   #Set the plot parameters
-  scale_surface = 100
+  scale_surface = 200
   n_sq = 24 * scale_surface
   B_lim = 3
   D_lim = 0.8
-  threshold_eq = 1e-3
+  threshold_eq = 1e-4
 
   # Make a grid of B and D values
   D_edges = np.linspace(0, D_lim, n_sq)
@@ -40,11 +40,16 @@ def surface_plots(name='nn', g_plot = 1.76):
   # Plot the surfaces
   plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, name)
 
+  # Plot the streamplot
+  plot_stream(Y_pred, B_grid, D_grid, name)
+
   # Plot the equilibrium lines
   plot_eq_lines(Y_eq, B_grid, D_grid, name)
 
-  # Plot the streamplot
-  plot_stream(Y_pred, B_grid, D_grid, name)
+  # Add effect of threshold_eq to the equilibrium lines plot
+  threshold_var = threshold_eq * 10
+  Y_eq_var = find_eq_points(Y_pred, threshold_var, B_grid, D_grid, scale_surface)
+  plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, name + '_var')
 
   # Save the results
   print('Saving surface plot results...')
@@ -206,6 +211,40 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, name):
 
   return
 
+def plot_stream(Y_pred, B_grid, D_grid, name):
+
+  # Unpack the results
+  dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
+
+  # Get the limits of the data
+  B_lim, D_lim = np.max(B_grid), np.max(D_grid)
+
+  # Find the feature space velocity and take the logarithm
+  velocity = np.sqrt((dB_dt/B_lim)**2 + (dD_dt/D_lim)**2)
+  log_vel = np.log10(velocity)
+
+  # Make the streamplot
+  fig, ax = plt.subplots(figsize=(16,14), dpi=300)
+
+  stream = plt.streamplot(D_grid, B_grid, dD_dt, dB_dt, color=log_vel, cmap=plt.cm.viridis,
+    minlength=0.01, linewidth=3, arrowsize=3)
+  cbar = fig.colorbar(stream.lines)
+  cbar.set_label('Log reltive rate of change ($s^{-1}$)', size=33, labelpad=17)
+  cbar.ax.tick_params(labelsize=35)
+  ax.set_ylim(0, B_lim)
+  ax.set_xlim(0, D_lim)
+  ax.set_ylabel('Biomass ($kg/m^2$)', fontsize=35, labelpad=15)
+  ax.set_xlabel('Soil depth ($m$)', fontsize=35, labelpad=15)
+  ax.xaxis.set_tick_params(labelsize=35)
+  ax.yaxis.set_tick_params(labelsize=35)
+  ticks = ax.get_xticks().tolist()
+  del ticks[0]
+  ax.set_xticks(ticks)
+  plt.tight_layout()
+  plt.savefig(paths.figures / f'streamplot_{name}.png')
+  
+  return
+
 def plot_eq_lines(Y_eq, B_grid, D_grid, name):
 
   # Unpack the results
@@ -256,36 +295,65 @@ def plot_eq_lines(Y_eq, B_grid, D_grid, name):
 
   return
 
-def plot_stream(Y_pred, B_grid, D_grid, name):
+def plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, name):
 
   # Unpack the results
-  dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
+  B_eq, D_eq = Y_eq['B'], Y_eq['D']
+  B_eq_var, D_eq_var = Y_eq_var['B'], Y_eq_var['D']
 
   # Get the limits of the data
   B_lim, D_lim = np.max(B_grid), np.max(D_grid)
 
-  # Find the feature space velocity and take the logarithm
-  velocity = np.sqrt((dB_dt/B_lim)**2 + (dD_dt/D_lim)**2)
-  log_vel = np.log10(velocity)
+  # Find the equilibrium points of the whole system
+  Y_eq_st = B_eq['stable'] & D_eq['stable']
+  Y_eq_un = (B_eq['unstable'] & D_eq['unstable']) | \
+            (B_eq['stable'] & D_eq['unstable']) | \
+            (B_eq['unstable'] & D_eq['stable'])
 
-  # Make the streamplot
-  fig, ax = plt.subplots(figsize=(16,14), dpi=300)
+  # Plot the equilibrium lines
+  fig, ax = plt.subplots(figsize=(16,14))
+  ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+  ax.yaxis.set_major_locator(plt.MaxNLocator(3, prune='lower'))
 
-  stream = plt.streamplot(D_grid, B_grid, dD_dt, dB_dt, color=log_vel, cmap=plt.cm.viridis,
-    minlength=0.01, linewidth=3, arrowsize=3)
-  cbar = fig.colorbar(stream.lines)
-  cbar.set_label('Log reltive rate of change ($s^{-1}$)', size=33, labelpad=17)
-  cbar.ax.tick_params(labelsize=35)
+  # Plot the equilibrium lines for dB/dt in light green
+  ax.scatter(D_grid[B_eq_var['unstable']], B_grid[B_eq_var['unstable']],
+        color='lightgreen', s=10, label='Biomass equilibrium var')
+  ax.scatter(D_grid[B_eq_var['stable']], B_grid[B_eq_var['stable']],
+        color='lightgreen', s=10)
+
+  # Plot the equilibrium lines for dD/dt in light blue
+  ax.scatter(D_grid[D_eq_var['unstable']], B_grid[D_eq_var['unstable']],
+        color='lightblue', s=10, label='Soil depth equilibrium var')
+  ax.scatter(D_grid[D_eq_var['stable']], B_grid[D_eq_var['stable']],
+        color='lightblue', s=10)
+
+  # Plot the equilibrium lines for dB/dt in green
+  ax.scatter(D_grid[B_eq['unstable']], B_grid[B_eq['unstable']],
+             color='green', s=10, label='Biomass equilibrium')
+  ax.scatter(D_grid[B_eq['stable']], B_grid[B_eq['stable']],
+              color='green', s=10)
+  
+  # Plot the equilibrium lines for dD/dt in blue
+  ax.scatter(D_grid[D_eq['unstable']], B_grid[D_eq['unstable']],
+             color='blue', s=10, label='Soil depth equilibrium')
+  ax.scatter(D_grid[D_eq['stable']], B_grid[D_eq['stable']],
+              color='blue', s=10)
+  
+  # Plot the points where Y is in usntable equilibrium in yellow
+  ax.scatter(D_grid[Y_eq_un], B_grid[Y_eq_un], color='yellow',
+             s=10, label='Unstable equilibrium')
+  
+  # Plot the points where Y is in stable equilibrium in red
+  ax.scatter(D_grid[Y_eq_st], B_grid[Y_eq_st], color='red',
+             s=10, label='Stable equilibrium')
+
   ax.set_ylim(0, B_lim)
   ax.set_xlim(0, D_lim)
-  ax.set_ylabel('Biomass ($kg/m^2$)', fontsize=35, labelpad=15)
-  ax.set_xlabel('Soil depth ($m$)', fontsize=35, labelpad=15)
-  ax.xaxis.set_tick_params(labelsize=35)
-  ax.yaxis.set_tick_params(labelsize=35)
-  ticks = ax.get_xticks().tolist()
-  del ticks[0]
-  ax.set_xticks(ticks)
+  ax.set_ylabel('Biomass ($kg/m^2$)')
+  ax.set_xlabel('Soil depth ($m$)')
+  ax.legend(loc = 'best', framealpha=1)
   plt.tight_layout()
-  plt.savefig(paths.figures / f'streamplot_{name}.png')
-  
+  plt.savefig(paths.figures / f'eq_lines_{name}.png')
+  #plt.savefig(os.path.join('results','eq_lines_nn.eps'), format='eps')
+
   return
