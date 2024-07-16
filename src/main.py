@@ -11,6 +11,7 @@ from modules.forward_simulation import forward_simulation
 from modules.surface_plots import surface_plots
 from modules.colormesh_plots import colormesh_plots
 from modules.tipping_evolution import tipping_evolution
+from modules.equilibrium_plots import equilibrium_plots
 from config import main as cfg
 from config import paths
 print('Successfully imported libraries and modules.')
@@ -53,9 +54,13 @@ if 'surface' in cfg.plots:
 if 'colormesh' in cfg.plots:
   run_summary += colormesh_plots()
 
-# Plot the system evolutionat the tipping point if in the plots list
+# Plot the system evolution at the tipping point if in the plots list
 if 'tipping' in cfg.plots:
   run_summary += tipping_evolution('nn')
+
+# Plot the system equilibria if in the plots list
+if 'equilibria' in cfg.plots:
+  run_summary += equilibrium_plots('nn')
 
 # Make a prediction of the evolution of the system for each simulation in X_ev
 if cfg.fwd_sim:
