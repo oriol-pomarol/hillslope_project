@@ -90,7 +90,8 @@ def colormesh_plots():
   axs[1].set_ylabel("Biomass (B)")
   fig.colorbar(mesh_1, label = "Std. dD/dt", ax=axs[1])
 
-  plt.text(2, 0, "This is a comment")
+  plt.text(2, 0, f"Number of observations: {n_obs} "+
+                  f"({n_obs*100/X_train.shape[0]:.2f}% of training data).")
   plt.savefig(paths.figures / 'colormesh_plot_std.png')
 
   # Add a couple lines to the summary with the system evolution parameters
