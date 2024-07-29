@@ -8,7 +8,7 @@ class main:
     model_training: str = 'none'     # 'none', 'rf', 'nn' or 'all'.
     model_evaluation: str = 'none'   # 'none', 'train', 'test' or 'all'
     fwd_sim: tuple = ()              # Folder names in fwd_sim, e.g. ('train_sim', 'test_sim')
-    plots: tuple = ('equilibrium')   # ['surface', 'colormesh', 'tipping', 'equilibrium']
+    plots: tuple = ('equilibrium', 'surface')   # ['surface', 'colormesh', 'tipping', 'equilibrium']
 
 
 @dataclass(frozen=True)
@@ -71,7 +71,7 @@ class plots:
     # GRID PARAMETERS
     B_lim: float = 3.0               # Maximum biomass value of the grid
     D_lim: float = 0.8               # Maximum soil depth value of the grid
-    scale_surface: int = 200         # Scale factor for the grid size of the plots
+    scale_surface: int = 20         # Scale factor for the grid size of the plots
     thr_eq: tuple = (1e-3, 1e-6)     # Thresholds for equilibrium detection (B, D)
 
     # SURFACE PLOT PARAMETERS
@@ -83,7 +83,7 @@ class plots:
 
     # EQUILIBRIUM PLOT PARAMETERS
     load_eq_points: bool = False     # Load equilibrium points from file
-    n_g_vals: int = 101              # Number of grazing pressure values to plot
+    n_g_vals: int = 11              # Number of grazing pressure values to plot
 
 
 @dataclass(frozen=True)

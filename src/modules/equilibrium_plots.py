@@ -10,18 +10,17 @@ from config import plots as cfg
 from config import paths
 
 def equilibrium_plots(model_name='nn'):
-  #Set the plot parameters
-  B_lim = 3
-  D_lim = 0.8
+  
+  #Set the plot colors and label names
   colors = ['#b2df8a', '#55a868', '#a6cee3', '#4c72b0', 'yellow', 'red']
   labels = ['B - unstable equilibrium', 'B - stable equilibrium', 
             'D - unstable equilibrium', 'D - stable equilibrium', 
             'System - unstable equilibrium', 'System - stable equilibrium']
 
   # Make a grid of B and D values
-  n_sq = int(B_lim * D_lim * 10) * cfg.scale_surface
-  D_edges = np.linspace(0, D_lim, n_sq)
-  B_edges = np.linspace(0, B_lim, n_sq)
+  n_sq = int(cfg.B_lim * cfg.D_lim * 10) * cfg.scale_surface
+  D_edges = np.linspace(0, cfg.D_lim, n_sq)
+  B_edges = np.linspace(0, cfg.B_lim, n_sq)
   D_grid, B_grid = np.meshgrid(D_edges, B_edges)
 
   # Load the model
@@ -49,10 +48,10 @@ def equilibrium_plots(model_name='nn'):
       Y_pred = model.predict(X_pred).reshape((n_sq, n_sq, -1))
 
       # Find stable and unstable equilibrium points
-      Y_eq = find_eq_points(Y_pred, cfg.thr_eq, B_grid, D_grid)
+      Y_eq = find_eq_points(Y_pred, B_grid, D_grid)
 
       # Find the feature space velocity and take the logarithm
-      velocity = np.sqrt((Y_pred[:,:,0]/B_lim)**2 + (Y_pred[:,:,1]/D_lim)**2)
+      velocity = np.sqrt((Y_pred[:,:,0]/cfg.B_lim)**2 + (Y_pred[:,:,1]/cfg.D_lim)**2)
       log_vel = np.log10(velocity)
 
       # Store the results in the dictionary
@@ -77,7 +76,7 @@ def equilibrium_plots(model_name='nn'):
     for g in np.linspace(0, 3, cfg.n_g_vals):
         
       # If in g_plot, use its results
-      if g in cfg.g_stream.keys():
+      if g in cfg.g_stream:
         Y_eq = splot_data[g]['Y_eq']
 
       else:
@@ -89,7 +88,7 @@ def equilibrium_plots(model_name='nn'):
         Y_pred = model.predict(X_pred).reshape((n_sq, n_sq, -1))
 
         # Find stable and unstable equilibrium points
-        Y_eq = find_eq_points(Y_pred, cfg.thr_eq, B_grid, D_grid)
+        Y_eq = find_eq_points(Y_pred, B_grid, D_grid)
 
       # Unpack the results
       B_eq, D_eq = Y_eq['B'], Y_eq['D']
@@ -106,7 +105,7 @@ def equilibrium_plots(model_name='nn'):
 
       # Store the results
       eq_points = pd.concat([eq_points, pd.DataFrame({'B': B_eq_st, 'D': D_eq_st,
-                                                      'g': cfg.g_stream, 'type': 'stable'})],
+                                                      'g': g, 'type': 'stable'})],
                                                       ignore_index=True)
       eq_points = pd.concat([eq_points, pd.DataFrame({'B': B_eq_un, 'D': D_eq_un,
                                                       'g': g, 'type': 'unstable'})],
@@ -116,7 +115,7 @@ def equilibrium_plots(model_name='nn'):
     eq_points.to_csv(paths.outputs / 'eq_points.csv', index=False)
 
   # Plot the streamplots
-  plot_streamplots(splot_data, B_lim, D_lim, B_grid, D_grid, colors, labels)
+  plot_streamplots(splot_data, B_grid, D_grid, colors, labels)
 
   # Plot the equilibrium points
   plot_eq_points(eq_points, colors, labels)
@@ -124,8 +123,8 @@ def equilibrium_plots(model_name='nn'):
   # Create a summary of the results
   equilibrium_summary = "".join(['\n\n*EQUILIBRIUM PLOTS*',
                                  '\ng_plot = {}'.format(cfg.g_stream),
-                                 '\nB_lim = {}'.format(B_lim),
-                                 '\nD_lim = {}'.format(D_lim),
+                                 '\nB_lim = {}'.format(cfg.B_lim),
+                                 '\nD_lim = {}'.format(cfg.D_lim),
                                  '\nthr_eq = {}'.format(cfg.thr_eq),
                                  '\nn_g_vals = {}'.format(cfg.n_g_vals)])
 
@@ -167,9 +166,6 @@ def find_eq_points(Y_pred, B_grid, D_grid):
   # Unpack the results
   dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
 
-  # Get the limits of the data
-  B_lim, D_lim = np.max(B_grid), np.max(D_grid)
-
   # Find the equilibrium points given the threshold weighted by the std
   B_eq = np.abs(dB_dt) < cfg.thr_eq[0]
   D_eq = np.abs(dD_dt) < cfg.thr_eq[1]
@@ -179,10 +175,10 @@ def find_eq_points(Y_pred, B_grid, D_grid):
   dD_dt_B, dD_dt_D = np.gradient(dD_dt)
   
   # Find the stable and unstable equilibrium points
-  B_st_eq = B_eq & ((dB_dt_B < 0) | (B_grid < 1/len(B_grid) * B_lim)) #& (dB_dt_D < 0)
+  B_st_eq = B_eq & ((dB_dt_B < 0) | (B_grid < 1/len(B_grid) * cfg.B_lim)) #& (dB_dt_D < 0)
   B_un_eq = B_eq & ~B_st_eq
 
-  D_st_eq = D_eq & ((dD_dt_D < 0) | (D_grid < 1/len(D_grid) * D_lim)) #& (dD_dt_B < 0 )
+  D_st_eq = D_eq & ((dD_dt_D < 0) | (D_grid < 1/len(D_grid) * cfg.D_lim)) #& (dD_dt_B < 0 )
   D_un_eq = D_eq & ~D_st_eq
 
   # Store the results in a dictionary
@@ -195,7 +191,7 @@ def find_eq_points(Y_pred, B_grid, D_grid):
 
 ##############################################################################
 
-def plot_streamplots(splot_data, B_lim, D_lim, B_grid, D_grid, colors, labels):
+def plot_streamplots(splot_data, B_grid, D_grid, colors, labels):
   
   # Define the plot sizes
   fontsize_titles = 32
@@ -263,8 +259,8 @@ def plot_streamplots(splot_data, B_lim, D_lim, B_grid, D_grid, colors, labels):
     for condition, color, size in zip(conditions, colors, point_sizes):
       ax.scatter(D_grid[condition], B_grid[condition], color=color, s=size, zorder=3)
 
-    ax.set_ylim(0, B_lim)
-    ax.set_xlim(0, D_lim)
+    ax.set_ylim(0, cfg.B_lim)
+    ax.set_xlim(0, cfg.D_lim)
     if i == 0:
       ax.set_ylabel('Biomass ($kg/m^2$)', labelpad=20, fontsize=fontsize_labels)
     if i == 1:

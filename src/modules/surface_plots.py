@@ -57,8 +57,6 @@ def surface_plots(model_name='nn'):
                              '\nD_lim = {}'.format(cfg.D_lim),
                              '\ng = {}'.format(cfg.g_surface)])
   
-  print('Successfully plotted the surface plots.')
-
   return surface_summary
 
 ##############################################################################
