@@ -59,7 +59,7 @@ if 'tipping' in cfg.plots:
   run_summary += tipping_evolution('nn')
 
 # Plot the system equilibria if in the plots list
-if 'equilibria' in cfg.plots:
+if 'equilibrium' in cfg.plots:
   run_summary += equilibrium_plots('nn')
 
 # Make a prediction of the evolution of the system for each simulation in X_ev

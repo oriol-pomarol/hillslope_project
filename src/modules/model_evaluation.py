@@ -109,7 +109,6 @@ def evaluate_set(X, y, rforest, nnetwork, set_name='train'):
 
   nn_summary = '\nmse_{}= {}'.format(set_name, mse_nn)
 
-
   # Determine which should be the minimum and maximum width of the bins
   min_B_test = min(np.min(y[:,0]), np.min(y_pred_nn[:,0]))
   max_B_test = max(np.max(y[:,0]), np.max(y_pred_nn[:,0]))

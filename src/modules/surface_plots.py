@@ -10,7 +10,7 @@ import joblib as jb
 from keras.models import load_model as keras_load_model
 from config import paths
 
-def surface_plots(name='nn', g_plot = 1.76):
+def surface_plots(model_name='nn', g_plot = 1.76):
 
   #Set the plot parameters
   scale_surface = 200
@@ -29,7 +29,7 @@ def surface_plots(name='nn', g_plot = 1.76):
                             np.full(n_sq**2, g_plot)))
 
   # Load the model
-  model = load_model(name)
+  model = load_model(model_name)
 
   # Use the model to predict the value of the derivatives in the grid points
   Y_pred = model.predict(X_pred).reshape((n_sq, n_sq, -1))
@@ -38,24 +38,24 @@ def surface_plots(name='nn', g_plot = 1.76):
   Y_eq = find_eq_points(Y_pred, threshold_eq, B_grid, D_grid, scale_surface)
 
   # Plot the surfaces
-  plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, name)
+  plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, model_name)
 
   # Plot the streamplot
-  plot_stream(Y_pred, B_grid, D_grid, name)
+  plot_stream(Y_pred, B_grid, D_grid, model_name)
 
   # Plot the equilibrium lines
-  plot_eq_lines(Y_eq, B_grid, D_grid, name)
+  plot_eq_lines(Y_eq, B_grid, D_grid, model_name)
 
   # Add effect of threshold_eq to the equilibrium lines plot
   threshold_var = threshold_eq * 10
   Y_eq_var = find_eq_points(Y_pred, threshold_var, B_grid, D_grid, scale_surface)
-  plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, name + '_var')
+  plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, model_name + '_var')
 
   # Save the results
   print('Saving surface plot results...')
   df = pd.DataFrame({'B_grid':B_grid.flatten(), 'D_grid':D_grid.flatten(),
                      'dB_dt':Y_pred[:,:,0].flatten(), 'dD_dt':Y_pred[:,:,1].flatten()})
-  df.to_csv(paths.outputs / f'surface_plots_{name}.csv')
+  df.to_csv(paths.outputs / f'surface_plots_{model_name}.csv')
   print('Successfully saved surface plot results.')
 
   # Add a couple lines to the summary with the system evolution parameters
@@ -72,18 +72,18 @@ def surface_plots(name='nn', g_plot = 1.76):
   return surface_summary
 
 
-def load_model(name):
+def load_model(model_name):
 
   # If the model is a neural network, load it using keras
-  if name == 'nn':
+  if model_name == 'nn':
     model = keras_load_model(paths.models / 'nn_model.h5', compile=False)
 
   # If the model is a random forest, load it using joblib
-  elif name == 'rf':
+  elif model_name == 'rf':
     model = jb.load(paths.models / 'rf_model.joblib')
 
   # If the model is the minimal model, define it
-  elif name == 'mm':
+  elif model_name == 'mm':
     class MinimalModel:
       def predict(self, X):
         r, c, i, d, s = 2.1, 2.9, -0.7, 0.04, 0.4 
@@ -132,7 +132,7 @@ def find_eq_points(Y_pred, threshold_eq, B_grid, D_grid, scale_surface):
   
   return Y_eq
 
-def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, name):
+def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, model_name):
 
   # Unpack the results
   dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
@@ -150,7 +150,7 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, name):
 
   # Set the style and font
   plt.style.use('default')
-  plt.rcParams['font.family'] = 'Merriweather'
+  #plt.rcParams['font.family'] = 'Merriweather'
 
   # Format axis
   min_max_dB = [np.min(dB_dt), np.max(dB_dt)]
@@ -206,12 +206,12 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, name):
              color='k', linestyle='', marker='o', markersize=5, zorder=5)
   
   plt.tight_layout()
-  plt.savefig(paths.figures / f'surface_plot_{name}.png')
+  plt.savefig(paths.figures / f'surface_plot_{model_name}.png')
   #plt.savefig(os.path.join('results','surface_plot_nn.eps'), format='eps')
 
   return
 
-def plot_stream(Y_pred, B_grid, D_grid, name):
+def plot_stream(Y_pred, B_grid, D_grid, model_name):
 
   # Unpack the results
   dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
@@ -241,11 +241,11 @@ def plot_stream(Y_pred, B_grid, D_grid, name):
   del ticks[0]
   ax.set_xticks(ticks)
   plt.tight_layout()
-  plt.savefig(paths.figures / f'streamplot_{name}.png')
+  plt.savefig(paths.figures / f'streamplot_{model_name}.png')
   
   return
 
-def plot_eq_lines(Y_eq, B_grid, D_grid, name):
+def plot_eq_lines(Y_eq, B_grid, D_grid, model_name):
 
   # Unpack the results
   B_eq, D_eq = Y_eq['B'], Y_eq['D']
@@ -290,12 +290,12 @@ def plot_eq_lines(Y_eq, B_grid, D_grid, name):
   ax.set_xlabel('Soil depth ($m$)')
   ax.legend(loc = 'best', framealpha=1)
   plt.tight_layout()
-  plt.savefig(paths.figures / f'eq_lines_{name}.png')
+  plt.savefig(paths.figures / f'eq_lines_{model_name}.png')
   #plt.savefig(os.path.join('results','eq_lines_nn.eps'), format='eps')
 
   return
 
-def plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, name):
+def plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, model_name):
 
   # Unpack the results
   B_eq, D_eq = Y_eq['B'], Y_eq['D']
@@ -353,7 +353,7 @@ def plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, name):
   ax.set_xlabel('Soil depth ($m$)')
   ax.legend(loc = 'best', framealpha=1)
   plt.tight_layout()
-  plt.savefig(paths.figures / f'eq_lines_{name}.png')
+  plt.savefig(paths.figures / f'eq_lines_{model_name}.png')
   #plt.savefig(os.path.join('results','eq_lines_nn.eps'), format='eps')
 
   return
