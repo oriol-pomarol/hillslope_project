@@ -35,6 +35,13 @@ def surface_plots(model_name='nn'):
   # Plot the surfaces
   plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, model_name)
 
+  if model_name != 'mm':
+    mm_model = load_model('mm')
+    Y_pred_mm = mm_model.predict(X_pred).reshape((n_sq, n_sq, -1))
+    Y_eq_mm = find_eq_points(Y_pred_mm, B_grid, D_grid)
+    plot_surface_comparison(Y_pred, Y_eq, Y_pred_mm, Y_eq_mm,
+                            B_grid, D_grid, model_name)
+
   # Plot the streamplot
   plot_stream(Y_pred, B_grid, D_grid, model_name)
 
@@ -85,7 +92,7 @@ def load_model(model_name):
         
         return np.column_stack((dB_dt_step, dD_dt_step))
     model = MinimalModel()
-  
+
   return model
 
 ##############################################################################
@@ -129,14 +136,12 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, model_name):
   B_eq, D_eq = Y_eq['B'], Y_eq['D']
 
   # Plot the surface for dB/dt and dD/dt for both models
+  plt.style.use('default')
   fig, ax = plt.subplots(1,2,figsize=(21,9), subplot_kw={"projection": "3d"})
 
-  # Tweak the font size and resolution
+  # Tweak figure parameters
   rcParams['font.size'] = 15
   rcParams['figure.dpi'] = 150
-
-  # Set the style and font
-  plt.style.use('default')
   #plt.rcParams['font.family'] = 'Merriweather'
 
   # Format axis
@@ -197,6 +202,105 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, model_name):
   #plt.savefig(os.path.join('results','surface_plot_nn.eps'), format='eps')
 
   return
+
+##############################################################################
+
+def plot_surface_comparison(Y_pred, Y_eq, Y_pred_mm, Y_eq_mm,
+                            B_grid, D_grid, model_name):
+
+  # Unpack the results
+  dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
+  B_eq, D_eq = Y_eq['B'], Y_eq['D']
+  dB_dt_mm, dD_dt_mm = Y_pred_mm[:,:,0], Y_pred_mm[:,:,1]
+  B_eq_mm, D_eq_mm = Y_eq_mm['B'], Y_eq_mm['D']
+
+  # Plot the surface for dB/dt and dD/dt for both models
+  plt.style.use('default')
+  fig, ax = plt.subplots(2, 2, figsize=(28, 14), subplot_kw={"projection": "3d"})
+
+  # Tweak figure parameters
+  fontsize_labels = 18
+  rcParams['font.size'] = 10
+  rcParams['figure.dpi'] = 150
+  #plt.rcParams['font.family'] = 'Merriweather'
+
+  # Create a desaturated version of the colormap
+  my_cmap = plt.cm.jet
+  desaturation = 0.8
+  jet_colors = my_cmap(np.arange(my_cmap.N))
+  jet_colors_hsv = mc.rgb_to_hsv(jet_colors[:, :3])
+  jet_colors_hsv[:, 1] *= desaturation
+  jet_colors_desaturated = mc.hsv_to_rgb(jet_colors_hsv)
+  my_cmap_desaturated = mc.ListedColormap(jet_colors_desaturated)
+
+  # Define the minimum and maximum values for the colorbar
+  min_max = [[min(np.min(dB_dt), np.min(dB_dt_mm)), max(np.max(dB_dt), np.max(dB_dt_mm))],
+            [min(np.min(dD_dt), np.min(dD_dt_mm)), max(np.max(dD_dt), np.max(dD_dt_mm))]]
+  norm_B = plt.Normalize(min_max[0][0], min_max[0][1])  # Normalize for B rates of change
+  norm_D = plt.Normalize(min_max[1][0], min_max[1][1])  # Normalize for D rates of change
+
+  # Store the data for easy access
+  surface_data = [[dB_dt_mm, dB_dt], [dD_dt_mm, dD_dt]]
+  eq_data = [[B_eq_mm, B_eq], [D_eq_mm, D_eq]]
+
+  # Plot the surface and eq. lines for dB/dt and dD/dt
+  for i in range(2):
+      for j in range(2):
+          
+          # Plot the surface
+          ax[i, j].plot_surface(B_grid, D_grid, surface_data[i][j],
+                                cmap=my_cmap_desaturated, linewidth=0.25,
+                                edgecolor = 'black', alpha=1, shade=False,
+                                rstride=cfg.scale_surface, cstride=cfg.scale_surface,
+                                norm=norm_B if i == 0 else norm_D)
+          ax[i, j].set_zlim(np.min(surface_data[i][j]), np.max(surface_data[i][j]))
+          dt_0 = ax[i, j].contour3D(X=B_grid, Y=D_grid, Z=surface_data[i][j],
+                                    levels = [0.0], linewidths=0)
+          
+          # Plot the equilibrium points
+          ax[i, j].plot(B_grid[eq_data[i][j]['unstable']], D_grid[eq_data[i][j]['unstable']],
+                        surface_data[i][j][eq_data[i][j]['unstable']],
+                        color='dimgray', linestyle='', marker='o', markersize=5, zorder=4)
+          ax[i, j].plot(B_grid[eq_data[i][j]['stable']], D_grid[eq_data[i][j]['stable']],
+                        surface_data[i][j][eq_data[i][j]['stable']],
+                        color='k', linestyle='', marker='o', markersize=5, zorder=5)
+
+              
+          # Add titles to the columns
+          if i == 0:
+              ax[i, j].set_title("EB-MM" if j == 0 else "ML-MM", fontsize=20)
+
+          
+  # Format axis
+  for i in range(2):
+      for j in range(2):
+          ax[i, j].set_zticks([min_max[i][0], min_max[i][1]])
+          ax[i, j].set_zlim(min_max[i][0], min_max[i][1])
+          ax[i, j].get_proj = lambda i=i, j=j: np.dot(Axes3D.get_proj(ax[i, j]), np.diag([1, 1, 0.3, 1]))
+          ax[i, j].zaxis.set_major_formatter(FormatStrFormatter('%.3f' if i == 0 else '%.4f'))
+          ax[i, j].set_zlabel('Biomass net\ngrowth ($kg/m^2/yr$)' if i == 0 else 'Soil depth\nincrease (m/yr)',
+                              labelpad=45, fontsize=fontsize_labels-2)
+          ax[i, j].xaxis.set_major_locator(plt.MaxNLocator(3, prune='lower'))
+          ax[i, j].yaxis.set_major_locator(plt.MaxNLocator(3))
+          ax[i, j].tick_params(axis='both', which='major', labelsize=20)
+          ax[i, j].tick_params(axis='z', pad=15, labelsize=20)
+          ax[i, j].set_xlim(cfg.B_lim,0)
+          ax[i, j].set_ylim(0,cfg.D_lim)
+          ax[i, j].set_xlabel('Biomass ($kg/m^2$)', labelpad=25, fontsize=fontsize_labels)
+          ax[i, j].set_ylabel('Soil depth ($m$)', labelpad=25, fontsize=fontsize_labels)
+
+          # Adjust the z-axis tick labels
+          for t in ax[i, j].zaxis.get_major_ticks():
+              t.label1.set_va('center')
+
+  # Adjust the space between subplots
+  plt.subplots_adjust(hspace=-0.25, wspace=-0.4)
+
+  # Save the figure
+  plt.savefig(paths.figures / f'surface_comparison_{model_name}.png')
+
+  return
+
 
 ##############################################################################
 
