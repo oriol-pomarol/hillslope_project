@@ -66,15 +66,20 @@ class forward_simulation:
 
 
 @dataclass(frozen=True)
-class equilibrium_plots:
+class plots:
 
-    # GENERAL PARAMETERS
-    scale_surface: int = 1000        # Scale factor for the surface plot
+    # GRID PARAMETERS
+    B_lim: float = 3.0               # Maximum biomass value of the grid
+    D_lim: float = 0.8               # Maximum soil depth value of the grid
+    scale_surface: int = 200         # Scale factor for the grid size of the plots
     thr_eq: tuple = (1e-3, 1e-6)     # Thresholds for equilibrium detection (B, D)
+
+    # SURFACE PLOT PARAMETERS
+    g_surface: float = 1.76          # Grazing pressure value to plot
 
     # STREAMPLOT PARAMETERS
     load_splot_data: bool = False    # Load streamplot data from file
-    g_splot: tuple = (0.0, 1.5, 3.0) # Grazing pressure values to plot
+    g_stream: tuple = (0., 1.5, 3.)  # Grazing pressure values to plot
 
     # EQUILIBRIUM PLOT PARAMETERS
     load_eq_points: bool = False     # Load equilibrium points from file

@@ -6,7 +6,7 @@ import matplotlib.colors as mc
 from matplotlib.patches import Patch
 import joblib as jb
 from keras.models import load_model as keras_load_model
-from config import equilibrium_plots as cfg
+from config import plots as cfg
 from config import paths
 
 def equilibrium_plots(model_name='nn'):
@@ -36,7 +36,7 @@ def equilibrium_plots(model_name='nn'):
     splot_data = {}
 
     # Add the missing data for the streamplot
-    for g in cfg.g_splot:
+    for g in cfg.g_stream:
 
       # Skip if the data is already stored
       if g in splot_data.keys():
@@ -77,7 +77,7 @@ def equilibrium_plots(model_name='nn'):
     for g in np.linspace(0, 3, cfg.n_g_vals):
         
       # If in g_plot, use its results
-      if g in cfg.g_splot.keys():
+      if g in cfg.g_stream.keys():
         Y_eq = splot_data[g]['Y_eq']
 
       else:
@@ -106,7 +106,7 @@ def equilibrium_plots(model_name='nn'):
 
       # Store the results
       eq_points = pd.concat([eq_points, pd.DataFrame({'B': B_eq_st, 'D': D_eq_st,
-                                                      'g': cfg.g_splot, 'type': 'stable'})],
+                                                      'g': cfg.g_stream, 'type': 'stable'})],
                                                       ignore_index=True)
       eq_points = pd.concat([eq_points, pd.DataFrame({'B': B_eq_un, 'D': D_eq_un,
                                                       'g': g, 'type': 'unstable'})],
@@ -123,7 +123,7 @@ def equilibrium_plots(model_name='nn'):
 
   # Create a summary of the results
   equilibrium_summary = "".join(['\n\n*EQUILIBRIUM PLOTS*',
-                                 '\ng_plot = {}'.format(cfg.g_splot.keys()),
+                                 '\ng_plot = {}'.format(cfg.g_stream),
                                  '\nB_lim = {}'.format(B_lim),
                                  '\nD_lim = {}'.format(D_lim),
                                  '\nthr_eq = {}'.format(cfg.thr_eq),
@@ -208,7 +208,6 @@ def plot_streamplots(splot_data, B_lim, D_lim, B_grid, D_grid, colors, labels):
 
   # Retrieve the number of subplots and the g values
   n_subplots = len(splot_data)
-  g_values = list(splot_data.keys())
 
   # Create a grid of subplots with the default style
   plt.style.use('default')
@@ -219,13 +218,13 @@ def plot_streamplots(splot_data, B_lim, D_lim, B_grid, D_grid, colors, labels):
       axs = [axs]
 
   # Get the global min and max of log_vel across all g_plot
-  global_log_vel_min = min(splot_data[g]['log_vel'].min() for g in g_values)
-  global_log_vel_max = max(splot_data[g]['log_vel'].max() for g in g_values)
+  global_log_vel_min = min(splot_data[g]['log_vel'].min() for g in cfg.g_stream)
+  global_log_vel_max = max(splot_data[g]['log_vel'].max() for g in cfg.g_stream)
 
   # Create a Normalize object for the color mapping
   norm = mc.Normalize(vmin=global_log_vel_min, vmax=global_log_vel_max)
       
-  for i, g in enumerate(g_values):
+  for i, g in enumerate(cfg.g_stream):
 
     # Set the title
     axs[i].set_title(f'g = {g:.1f} kg/m$^2$/yr', fontsize=fontsize_titles, pad=20)

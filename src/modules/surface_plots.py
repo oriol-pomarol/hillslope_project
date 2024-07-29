@@ -8,25 +8,20 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.colors as mc
 import joblib as jb
 from keras.models import load_model as keras_load_model
+from config import plots as cfg
 from config import paths
 
-def surface_plots(model_name='nn', g_plot = 1.76):
-
-  #Set the plot parameters
-  scale_surface = 200
-  n_sq = 24 * scale_surface
-  B_lim = 3
-  D_lim = 0.8
-  threshold_eq = 1e-4
+def surface_plots(model_name='nn'):
 
   # Make a grid of B and D values
-  D_edges = np.linspace(0, D_lim, n_sq)
-  B_edges = np.linspace(0, B_lim, n_sq)
+  n_sq = int(cfg.B_lim * cfg.D_lim * 10) * cfg.scale_surface
+  D_edges = np.linspace(0, cfg.D_lim, n_sq)
+  B_edges = np.linspace(0, cfg.B_lim, n_sq)
   D_grid, B_grid = np.meshgrid(D_edges, B_edges)
 
   # Format the data to feed to the model
   X_pred = np.column_stack((B_grid.flatten(), D_grid.flatten(),
-                            np.full(n_sq**2, g_plot)))
+                            np.full(n_sq**2, cfg.g_surface)))
 
   # Load the model
   model = load_model(model_name)
@@ -35,21 +30,16 @@ def surface_plots(model_name='nn', g_plot = 1.76):
   Y_pred = model.predict(X_pred).reshape((n_sq, n_sq, -1))
 
   # Find stable and unstable equilibrium points
-  Y_eq = find_eq_points(Y_pred, threshold_eq, B_grid, D_grid, scale_surface)
+  Y_eq = find_eq_points(Y_pred, B_grid, D_grid)
 
   # Plot the surfaces
-  plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, model_name)
+  plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, model_name)
 
   # Plot the streamplot
   plot_stream(Y_pred, B_grid, D_grid, model_name)
 
   # Plot the equilibrium lines
   plot_eq_lines(Y_eq, B_grid, D_grid, model_name)
-
-  # Add effect of threshold_eq to the equilibrium lines plot
-  threshold_var = threshold_eq * 10
-  Y_eq_var = find_eq_points(Y_pred, threshold_var, B_grid, D_grid, scale_surface)
-  plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, model_name + '_var')
 
   # Save the results
   print('Saving surface plot results...')
@@ -61,16 +51,17 @@ def surface_plots(model_name='nn', g_plot = 1.76):
   # Add a couple lines to the summary with the system evolution parameters
   surface_summary = "".join(['\n\n*SURFACE PLOTS*',
                              '\nn_sq = {}'.format(n_sq),
-                             '\nscale_factor = {}'.format(scale_surface),
-                             '\nthreshold_eq = {}'.format(threshold_eq),
-                             '\nB_lim = {}'.format(B_lim),
-                             '\nD_lim = {}'.format(D_lim),
-                             '\ng = {}'.format(g_plot)])
+                             '\nscale_factor = {}'.format(cfg.scale_surface),
+                             '\nthreshold_eq = {}'.format(cfg.thr_eq),
+                             '\nB_lim = {}'.format(cfg.B_lim),
+                             '\nD_lim = {}'.format(cfg.D_lim),
+                             '\ng = {}'.format(cfg.g_surface)])
   
   print('Successfully plotted the surface plots.')
 
   return surface_summary
 
+##############################################################################
 
 def load_model(model_name):
 
@@ -99,29 +90,28 @@ def load_model(model_name):
   
   return model
 
-def find_eq_points(Y_pred, threshold_eq, B_grid, D_grid, scale_surface):
+##############################################################################
+
+def find_eq_points(Y_pred, B_grid, D_grid):
 
   # Unpack the results
   dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
 
-  # Get the limits of the data
-  B_lim, D_lim = np.max(B_grid), np.max(D_grid)
-
   # Find the equilibrium points given the threshold weighted by the std
-  B_eq = np.abs(dB_dt) < threshold_eq * np.std(dB_dt)
-  D_eq = np.abs(dD_dt) < threshold_eq * np.std(dD_dt)
-  
+  B_eq = np.abs(dB_dt) < cfg.thr_eq[0]
+  D_eq = np.abs(dD_dt) < cfg.thr_eq[1]
+
   # Compute the gradients
   dB_dt_B, dB_dt_D = np.gradient(dB_dt)
   dD_dt_B, dD_dt_D = np.gradient(dD_dt)
 
-  frac = 1 / (24 * scale_surface)
+  frac = 1 / (24 * cfg.scale_surface)
   
   # Find the stable and unstable equilibrium points
-  B_st_eq = B_eq & ((dB_dt_B < 0) | (B_grid < frac * B_lim)) #& (dB_dt_D < 0)
+  B_st_eq = B_eq & ((dB_dt_B < 0) | (B_grid < frac * cfg.B_lim)) #& (dB_dt_D < 0)
   B_un_eq = B_eq & ~B_st_eq
 
-  D_st_eq = D_eq & ((dD_dt_D < 0) | (D_grid < frac * D_lim)) #& (dD_dt_B < 0 )
+  D_st_eq = D_eq & ((dD_dt_D < 0) | (D_grid < frac * cfg.D_lim)) #& (dD_dt_B < 0 )
   D_un_eq = D_eq & ~D_st_eq
 
   # Store the results in a dictionary
@@ -132,14 +122,13 @@ def find_eq_points(Y_pred, threshold_eq, B_grid, D_grid, scale_surface):
   
   return Y_eq
 
-def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, model_name):
+##############################################################################
+
+def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, model_name):
 
   # Unpack the results
   dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
   B_eq, D_eq = Y_eq['B'], Y_eq['D']
-
-  # Get the limits of the data
-  B_lim, D_lim = np.max(B_grid), np.max(D_grid)
 
   # Plot the surface for dB/dt and dD/dt for both models
   fig, ax = plt.subplots(1,2,figsize=(21,9), subplot_kw={"projection": "3d"})
@@ -169,8 +158,8 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, model_name):
     ax_.yaxis.set_major_locator(plt.MaxNLocator(3))
     ax_.tick_params(axis='both', which='major', labelsize=20)
     ax_.tick_params(axis='z', pad=15, labelsize=20)
-    ax_.set_xlim(B_lim,0)
-    ax_.set_ylim(0,D_lim)
+    ax_.set_xlim(cfg.B_lim,0)
+    ax_.set_ylim(0,cfg.D_lim)
     ax_.set_xlabel('Biomass ($kg/m^2$)', labelpad=25, fontsize=22)
     ax_.set_ylabel('Soil depth ($m$)', labelpad=25, fontsize=22)
 
@@ -185,7 +174,7 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, model_name):
 
   # Plot the surface for dB/dt
   ax[0].plot_surface(B_grid, D_grid, dB_dt, cmap=my_cmap_desaturated, linewidth=0.25, edgecolor = 'black',
-            alpha=1, shade=False, rstride=scale_surface, cstride=scale_surface, zorder=1)
+            alpha=1, shade=False, rstride=cfg.scale_surface, cstride=cfg.scale_surface, zorder=1)
   ax[0].set_zlim(np.min(dB_dt),np.max(dB_dt))
   
   # Plot the equilibrium points for dB/dt
@@ -196,7 +185,7 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, model_name):
   
   # Plot the surface and eq. lines for dD/dt
   ax[1].plot_surface(B_grid, D_grid, dD_dt, cmap=my_cmap_desaturated, linewidth=0.25, edgecolor = 'black',
-                    alpha=1, shade=False, rstride=scale_surface, cstride=scale_surface, zorder=1)
+                    alpha=1, shade=False, rstride=cfg.scale_surface, cstride=cfg.scale_surface, zorder=1)
   ax[1].set_zlim(np.min(dD_dt),np.max(dD_dt))
 
   # Plot the equilibrium points for dD/dt
@@ -211,16 +200,15 @@ def plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, scale_surface, model_name):
 
   return
 
+##############################################################################
+
 def plot_stream(Y_pred, B_grid, D_grid, model_name):
 
   # Unpack the results
   dB_dt, dD_dt = Y_pred[:,:,0], Y_pred[:,:,1]
 
-  # Get the limits of the data
-  B_lim, D_lim = np.max(B_grid), np.max(D_grid)
-
   # Find the feature space velocity and take the logarithm
-  velocity = np.sqrt((dB_dt/B_lim)**2 + (dD_dt/D_lim)**2)
+  velocity = np.sqrt((dB_dt/cfg.B_lim)**2 + (dD_dt/cfg.D_lim)**2)
   log_vel = np.log10(velocity)
 
   # Make the streamplot
@@ -231,8 +219,8 @@ def plot_stream(Y_pred, B_grid, D_grid, model_name):
   cbar = fig.colorbar(stream.lines)
   cbar.set_label('Log reltive rate of change ($s^{-1}$)', size=33, labelpad=17)
   cbar.ax.tick_params(labelsize=35)
-  ax.set_ylim(0, B_lim)
-  ax.set_xlim(0, D_lim)
+  ax.set_ylim(0, cfg.B_lim)
+  ax.set_xlim(0, cfg.D_lim)
   ax.set_ylabel('Biomass ($kg/m^2$)', fontsize=35, labelpad=15)
   ax.set_xlabel('Soil depth ($m$)', fontsize=35, labelpad=15)
   ax.xaxis.set_tick_params(labelsize=35)
@@ -245,13 +233,12 @@ def plot_stream(Y_pred, B_grid, D_grid, model_name):
   
   return
 
+##############################################################################
+
 def plot_eq_lines(Y_eq, B_grid, D_grid, model_name):
 
   # Unpack the results
   B_eq, D_eq = Y_eq['B'], Y_eq['D']
-
-  # Get the limits of the data
-  B_lim, D_lim = np.max(B_grid), np.max(D_grid)
 
   # Find the equilibrium points of the whole system
   Y_eq_st = B_eq['stable'] & D_eq['stable']
@@ -284,8 +271,8 @@ def plot_eq_lines(Y_eq, B_grid, D_grid, model_name):
   ax.scatter(D_grid[Y_eq_st], B_grid[Y_eq_st], color='red',
              s=10, label='Stable equilibrium')
 
-  ax.set_ylim(0, B_lim)
-  ax.set_xlim(0, D_lim)
+  ax.set_ylim(0, cfg.B_lim)
+  ax.set_xlim(0, cfg.D_lim)
   ax.set_ylabel('Biomass ($kg/m^2$)')
   ax.set_xlabel('Soil depth ($m$)')
   ax.legend(loc = 'best', framealpha=1)
@@ -295,14 +282,13 @@ def plot_eq_lines(Y_eq, B_grid, D_grid, model_name):
 
   return
 
+##############################################################################
+
 def plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, model_name):
 
   # Unpack the results
   B_eq, D_eq = Y_eq['B'], Y_eq['D']
   B_eq_var, D_eq_var = Y_eq_var['B'], Y_eq_var['D']
-
-  # Get the limits of the data
-  B_lim, D_lim = np.max(B_grid), np.max(D_grid)
 
   # Find the equilibrium points of the whole system
   Y_eq_st = B_eq['stable'] & D_eq['stable']
@@ -347,8 +333,8 @@ def plot_eq_lines_var(Y_eq, Y_eq_var, B_grid, D_grid, model_name):
   ax.scatter(D_grid[Y_eq_st], B_grid[Y_eq_st], color='red',
              s=10, label='Stable equilibrium')
 
-  ax.set_ylim(0, B_lim)
-  ax.set_xlim(0, D_lim)
+  ax.set_ylim(0, cfg.B_lim)
+  ax.set_xlim(0, cfg.D_lim)
   ax.set_ylabel('Biomass ($kg/m^2$)')
   ax.set_xlabel('Soil depth ($m$)')
   ax.legend(loc = 'best', framealpha=1)
