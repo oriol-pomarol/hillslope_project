@@ -8,7 +8,7 @@ class main:
     model_training: str = 'none'     # 'none', 'rf', 'nn' or 'all'.
     model_evaluation: str = 'none'   # 'none', 'train', 'test' or 'all'
     fwd_sim: tuple = ()              # Folder names in fwd_sim, e.g. ('train_sim', 'test_sim')
-    plots: tuple = ('equilibrium', 'surface')   # ['surface', 'colormesh', 'tipping', 'equilibrium']
+    plots: tuple = ('surface')   # ['surface', 'colormesh', 'tipping', 'equilibrium']
 
 
 @dataclass(frozen=True)
@@ -75,6 +75,7 @@ class plots:
     thr_eq: tuple = (1e-3, 1e-6)     # Thresholds for equilibrium detection (B, D)
 
     # SURFACE PLOT PARAMETERS
+    load_surface: bool = True       # Load surface data from file
     g_surface: float = 1.76          # Grazing pressure value to plot
 
     # STREAMPLOT PARAMETERS

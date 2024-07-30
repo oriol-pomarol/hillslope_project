@@ -26,8 +26,17 @@ def surface_plots(model_name='nn'):
   # Load the model
   model = load_model(model_name)
 
-  # Use the model to predict the value of the derivatives in the grid points
-  Y_pred = model.predict(X_pred).reshape((n_sq, n_sq, -1))
+  # Load the surface data if specified
+  if cfg.load_surface:
+     Y_pred = pd.read_csv(paths.outputs / f'surface_plots_{model_name}.csv')
+     Y_pred = Y_pred[['dB_dt', 'dD_dt']].values.reshape((n_sq, n_sq, -1))
+
+  # Otherwise, predict the surface data and save it
+  else:
+    Y_pred = model.predict(X_pred).reshape((n_sq, n_sq, -1))
+    df = pd.DataFrame({'B_grid':B_grid.flatten(), 'D_grid':D_grid.flatten(),
+                      'dB_dt':Y_pred[:,:,0].flatten(), 'dD_dt':Y_pred[:,:,1].flatten()})
+    df.to_csv(paths.outputs / f'surface_plots_{model_name}.csv')
 
   # Find stable and unstable equilibrium points
   Y_eq = find_eq_points(Y_pred, B_grid, D_grid)
@@ -35,6 +44,7 @@ def surface_plots(model_name='nn'):
   # Plot the surfaces
   plot_surfaces(Y_pred, Y_eq, B_grid, D_grid, model_name)
 
+  # Plot the surface comparison if the model is not the minimal model
   if model_name != 'mm':
     mm_model = load_model('mm')
     Y_pred_mm = mm_model.predict(X_pred).reshape((n_sq, n_sq, -1))
@@ -47,13 +57,6 @@ def surface_plots(model_name='nn'):
 
   # Plot the equilibrium lines
   plot_eq_lines(Y_eq, B_grid, D_grid, model_name)
-
-  # Save the results
-  print('Saving surface plot results...')
-  df = pd.DataFrame({'B_grid':B_grid.flatten(), 'D_grid':D_grid.flatten(),
-                     'dB_dt':Y_pred[:,:,0].flatten(), 'dD_dt':Y_pred[:,:,1].flatten()})
-  df.to_csv(paths.outputs / f'surface_plots_{model_name}.csv')
-  print('Successfully saved surface plot results.')
 
   # Add a couple lines to the summary with the system evolution parameters
   surface_summary = "".join(['\n\n*SURFACE PLOTS*',
@@ -233,29 +236,38 @@ def plot_surface_comparison(Y_pred, Y_eq, Y_pred_mm, Y_eq_mm,
   jet_colors_desaturated = mc.hsv_to_rgb(jet_colors_hsv)
   my_cmap_desaturated = mc.ListedColormap(jet_colors_desaturated)
 
-  # Define the minimum and maximum values for the colorbar
-  min_max = [[min(np.min(dB_dt), np.min(dB_dt_mm)), max(np.max(dB_dt), np.max(dB_dt_mm))],
-            [min(np.min(dD_dt), np.min(dD_dt_mm)), max(np.max(dD_dt), np.max(dD_dt_mm))]]
-  norm_B = plt.Normalize(min_max[0][0], min_max[0][1])  # Normalize for B rates of change
-  norm_D = plt.Normalize(min_max[1][0], min_max[1][1])  # Normalize for D rates of change
+  # Define the minimum and maximum values for the colorbar  
+  def sfc_corner_avg(data):
+      data_slice = data[::cfg.scale_surface, ::cfg.scale_surface]
+      block_averages = np.array([[np.mean(data_slice[i:i+2, j:j+2]) 
+                                  for j in range(0, data_slice.shape[1], 2)] 
+                                 for i in range(0, data_slice.shape[0], 2)])
+      return block_averages.min(), block_averages.max()
+  
+  min_max = [[min(sfc_corner_avg(dB_dt)[0], sfc_corner_avg(dB_dt_mm)[0]), 
+              max(sfc_corner_avg(dB_dt)[1], sfc_corner_avg(dB_dt_mm)[1])],
+             [min(sfc_corner_avg(dD_dt)[0], sfc_corner_avg(dD_dt_mm)[0]), 
+              max(sfc_corner_avg(dD_dt)[1], sfc_corner_avg(dD_dt_mm)[1])]]
+  
+  # Normalize the data for the colorbar
+  norm_B = plt.Normalize(min_max[0][0], min_max[0][1])
+  norm_D = plt.Normalize(min_max[1][0], min_max[1][1])
 
   # Store the data for easy access
   surface_data = [[dB_dt_mm, dB_dt], [dD_dt_mm, dD_dt]]
   eq_data = [[B_eq_mm, B_eq], [D_eq_mm, D_eq]]
 
-  # Plot the surface and eq. lines for dB/dt and dD/dt
+  # Plot the surface and eq. points for dB/dt and dD/dt
   for i in range(2):
       for j in range(2):
           
           # Plot the surface
           ax[i, j].plot_surface(B_grid, D_grid, surface_data[i][j],
-                                cmap=my_cmap_desaturated, linewidth=0.25,
+                                cmap=my_cmap_desaturated, linewidth=0.5,
                                 edgecolor = 'black', alpha=1, shade=False,
                                 rstride=cfg.scale_surface, cstride=cfg.scale_surface,
                                 norm=norm_B if i == 0 else norm_D)
           ax[i, j].set_zlim(np.min(surface_data[i][j]), np.max(surface_data[i][j]))
-          dt_0 = ax[i, j].contour3D(X=B_grid, Y=D_grid, Z=surface_data[i][j],
-                                    levels = [0.0], linewidths=0)
           
           # Plot the equilibrium points
           ax[i, j].plot(B_grid[eq_data[i][j]['unstable']], D_grid[eq_data[i][j]['unstable']],
@@ -264,7 +276,6 @@ def plot_surface_comparison(Y_pred, Y_eq, Y_pred_mm, Y_eq_mm,
           ax[i, j].plot(B_grid[eq_data[i][j]['stable']], D_grid[eq_data[i][j]['stable']],
                         surface_data[i][j][eq_data[i][j]['stable']],
                         color='k', linestyle='', marker='o', markersize=5, zorder=5)
-
               
           # Add titles to the columns
           if i == 0:
