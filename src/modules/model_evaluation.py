@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from matplotlib.ticker import MaxNLocator
 import joblib as jb
 from keras.models import load_model
 from config import paths
@@ -62,45 +63,7 @@ def evaluate_set(X, y, rforest, nnetwork, set_name='train'):
 
   rf_summary = '\nmse_{}= {}'.format(set_name, mse_for)
 
-  # Define some variables for the plots
-  min_B_test = min(np.min(y[:,0]), np.min(y_pred_for[:,0]))
-  max_B_test = max(np.max(y[:,0]), np.max(y_pred_for[:,0]))
-  B_binwidth = (max_B_test - min_B_test)/50
-
-  min_D_test = min(np.min(y[:,1]), np.min(y_pred_for[:,1]))
-  max_D_test = max(np.max(y[:,1]), np.max(y_pred_for[:,1]))
-  D_binwidth = (max_D_test - min_D_test)/50
-
-  # Plot the predicted vs true values for dB/dt and dD/dt of RF
-  fig, axs = plt.subplots(1, 2, figsize = (12,6))
-
-  axs[0].plot(y[:,0], y[:,0], '-r')
-  h0 = axs[0].hist2d(y[:,0], y_pred_for[:,0], 
-                     bins = np.arange(min_B_test, max_B_test + B_binwidth, B_binwidth), 
-                     norm = colors.LogNorm())
-  axs[0].set_xlabel('True dB/dt values')
-  axs[0].set_ylabel('Predicted dB/dt values')
-  axs[0].autoscale()
-
-  axs[1].plot(y[:,1], y[:,1], '-r')
-  h1 = axs[1].hist2d(y[:,1], y_pred_for[:,1], 
-                     bins = np.arange(min_D_test, max_D_test + D_binwidth, D_binwidth),
-                     norm = colors.LogNorm())
-  axs[1].set_xlabel('True dD/dt values')
-  axs[1].set_ylabel('Predicted dD/dt values')
-  axs[1].autoscale()
-
-  fig.colorbar(h0[3], ax=axs[0])
-  fig.colorbar(h1[3], ax=axs[1])
-  fig.suptitle('Random forest')
-  fig.patch.set_alpha(1)
-
-  # Calculate R² value for RF for each plot and add it to the plot
-  r2_for_0 = r2_score(y[:,0], y_pred_for[:,0])
-  r2_for_1 = r2_score(y[:,1], y_pred_for[:,1])
-  axs[0].text(0.05, 0.95, f'R² = {r2_for_0:.2e}', transform=axs[0].transAxes, verticalalignment='top')
-  axs[1].text(0.05, 0.95, f'R² = {r2_for_1:.2e}', transform=axs[1].transAxes, verticalalignment='top')
-  plt.savefig(paths.figures / f'{set_name}_pred_vs_true_rf.png')
+  plot_true_vs_pred(y, y_pred_for, set_name, 'rf')
 
   # Predict the values from the test set and evaluate the MSE
   y_pred_nn = nnetwork.predict(X, verbose = False)
@@ -109,48 +72,84 @@ def evaluate_set(X, y, rforest, nnetwork, set_name='train'):
 
   nn_summary = '\nmse_{}= {}'.format(set_name, mse_nn)
 
-  # Determine which should be the minimum and maximum width of the bins
-  min_B_test = min(np.min(y[:,0]), np.min(y_pred_nn[:,0]))
-  max_B_test = max(np.max(y[:,0]), np.max(y_pred_nn[:,0]))
-  B_binwidth = (max_B_test - min_B_test)/50
-
-  min_D_test = min(np.min(y[:,1]), np.min(y_pred_nn[:,1]))
-  max_D_test = max(np.max(y[:,1]), np.max(y_pred_nn[:,1]))
-  D_binwidth = (max_D_test - min_D_test)/50
-
-  # Plot the predicted vs true values for dB/dt and dD/dt of NN
-  fig, axs = plt.subplots(1, 2, figsize = (12,6))
-
-  axs[0].plot(y[:,0], y[:,0], '-r')
-  h0 = axs[0].hist2d(y[:,0], y_pred_nn[:,0], 
-                     bins = np.arange(min_B_test, max_B_test + B_binwidth, B_binwidth), 
-                     norm = colors.LogNorm())
-  axs[0].set_xlabel('True dB/dt values')
-  axs[0].set_ylabel('Predicted dB/dt values')
-  axs[0].autoscale()
-
-  axs[1].plot(y[:,1], y[:,1], '-r')
-  h1 = axs[1].hist2d(y[:,1], y_pred_nn[:,1], 
-                     bins = np.arange(min_D_test, max_D_test + D_binwidth, D_binwidth),
-                     norm = colors.LogNorm())
-  axs[1].set_xlabel('True dD/dt values')
-  axs[1].set_ylabel('Predicted dD/dt values')
-  axs[1].autoscale()
-
-  fig.colorbar(h0[3], ax=axs[0])
-  fig.colorbar(h1[3], ax=axs[1])
-  fig.suptitle('Neural network')
-  fig.patch.set_alpha(1)
-
-  # Calculate R² value for NN for each plot and add it to the plot
-  r2_nn_0 = r2_score(y[:,0], y_pred_nn[:,0])
-  r2_nn_1 = r2_score(y[:,1], y_pred_nn[:,1])
-  axs[0].text(0.05, 0.95, f'R² = {r2_nn_0:.2e}', transform=axs[0].transAxes, verticalalignment='top')
-  axs[1].text(0.05, 0.95, f'R² = {r2_nn_1:.2e}', transform=axs[1].transAxes, verticalalignment='top')
-  plt.savefig(paths.figures / 'test_predicted_vs_true_nn.png')
+  plot_true_vs_pred(y, y_pred_nn, set_name, 'nn')
 
   # Save the results
   np.savez(paths.outputs / 'test_evaluation.npz', y=y, y_pred_for=y_pred_for, y_pred_nn=y_pred_nn)
   print('Successfully completed NN test set evaluation.')
 
   return rf_summary, nn_summary
+
+##############################################################################
+
+def plot_true_vs_pred(y, y_pred, set_name, model_name):
+
+  # Plot sizes
+  fontsize_labels = 18
+  fontsize_ticks = 18
+
+  # Define some variables for the plots
+  min_B_test = min(np.min(y[:,0]), np.min(y_pred[:,0]))
+  max_B_test = max(np.max(y[:,0]), np.max(y_pred[:,0]))
+  B_binwidth = (max_B_test - min_B_test)/50
+
+  min_D_test = min(np.min(y[:,1]), np.min(y_pred[:,1]))
+  max_D_test = max(np.max(y[:,1]), np.max(y_pred[:,1]))
+  D_binwidth = (max_D_test - min_D_test)/50
+
+  # Define a colormap and a normalization instance
+  cmap = plt.cm.viridis
+  norm = colors.LogNorm(vmin=1, vmax=len(y))
+
+  # Plot the predicted vs true values for dB/dt and dD/dt of RF
+  plt.style.use('seaborn-v0_8')
+  fig, axs = plt.subplots(1, 2, figsize = (16,7))
+
+  axs[0].plot(y[:,0], y[:,0], '-k')
+  h0 = axs[0].hist2d(y[:,0], y_pred[:,0], 
+                     bins = np.arange(min_B_test, max_B_test + B_binwidth, B_binwidth), 
+                     cmap = cmap, norm = norm)
+  axs[0].set_xlabel('Modelled $\Delta B/\Delta t$ ($kg/m^2/yr$)', fontsize = fontsize_labels)
+  axs[0].set_ylabel('Predicted $\Delta B/\Delta t$ ($kg/m^2/yr$)', fontsize = fontsize_labels)
+  axs[0].autoscale()
+
+  axs[1].plot(y[:,1], y[:,1], '-k')
+  h1 = axs[1].hist2d(y[:,1], y_pred[:,1], 
+                     bins = np.arange(min_D_test, max_D_test + D_binwidth, D_binwidth),
+                     norm = colors.LogNorm())
+  axs[1].set_xlabel('Modelled $\Delta B/\Delta t$ ($kg/m^2/yr$)', fontsize = fontsize_labels)
+  axs[1].set_ylabel('Predicted $\Delta B/\Delta t$ ($kg/m^2/yr$)', fontsize = fontsize_labels)
+  axs[1].autoscale()
+
+  # Calculate R² value for RF for each plot and add it to the plot
+  r2_for_0 = r2_score(y[:,0], y_pred[:,0])
+  r2_for_1 = r2_score(y[:,1], y_pred[:,1])
+  axs[0].text(0.05, 0.95, f'R² = {r2_for_0:.2e}', transform=axs[0].transAxes,
+              verticalalignment='top', fontsize=fontsize_labels)
+  axs[1].text(0.05, 0.95, f'R² = {r2_for_1:.2e}', transform=axs[1].transAxes,
+              verticalalignment='top', fontsize=fontsize_labels)
+  
+  # Use MaxNLocator for nice tick values
+  n_ticks = 4
+  axs[0].xaxis.set_major_locator(MaxNLocator(integer=True, nbins=n_ticks+1))
+  axs[0].yaxis.set_major_locator(MaxNLocator(integer=True, nbins=n_ticks+1))
+  axs[1].xaxis.set_major_locator(MaxNLocator(integer=True, nbins=n_ticks))
+  axs[1].yaxis.set_major_locator(MaxNLocator(integer=True, nbins=n_ticks))
+
+  # Adjust each subplot to allow for space for the axis labels
+  plt.subplots_adjust(wspace=0.25)
+
+  # Create a single colorbar for the entire figure
+  cbar_ax = fig.add_axes([0.91, 0.12, 0.03, 0.75])
+  cbar = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_ax)
+  cbar.set_label('Number of data points', fontsize=18)
+  cbar.ax.tick_params(labelsize=18)
+  cbar.ax.tick_params(axis='both', which='major', length=3, width=1)
+
+  # Set font size for tick labels
+  for ax in axs:
+      ax.tick_params(axis='both', which='major', labelsize=fontsize_ticks)
+
+  plt.savefig(paths.figures / f'{set_name}_pred_vs_true_{model_name}.png')
+
+  return
