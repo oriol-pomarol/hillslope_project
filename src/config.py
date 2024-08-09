@@ -8,7 +8,7 @@ class main:
     model_training: str = 'none'     # 'none', 'rf', 'nn' or 'all'.
     model_evaluation: str = 'none'   # 'none', 'train', 'test' or 'all'
     fwd_sim: tuple = ()              # Folder names in fwd_sim, e.g. ('train_sim', 'test_sim')
-    plots: tuple = ('surface')   # ['surface', 'colormesh', 'tipping', 'equilibrium']
+    plots: tuple = ('equilibrium')   # ['surface', 'colormesh', 'tipping', 'equilibrium']
 
 
 @dataclass(frozen=True)
@@ -79,11 +79,11 @@ class plots:
     g_surface: float = 1.76          # Grazing pressure value to plot
 
     # STREAMPLOT PARAMETERS
-    load_splot_data: bool = False    # Load streamplot data from file
+    load_splot_data: bool = True    # Load streamplot data from file
     g_stream: tuple = (0., 1.5, 3.)  # Grazing pressure values to plot
 
     # EQUILIBRIUM PLOT PARAMETERS
-    load_eq_points: bool = False     # Load equilibrium points from file
+    load_eq_points: bool = True     # Load equilibrium points from file
     n_g_vals: int = 11              # Number of grazing pressure values to plot
 
 

@@ -101,7 +101,7 @@ def plot_true_vs_pred(y, y_pred, set_name, model_name):
   cmap = plt.cm.viridis
   norm = colors.LogNorm(vmin=1, vmax=len(y))
 
-  # Plot the predicted vs true values for dB/dt and dD/dt of RF
+  # Plot the predicted vs true values for dB/dt and dD/dt
   plt.style.use('seaborn-v0_8')
   fig, axs = plt.subplots(1, 2, figsize = (16,7))
 
@@ -121,13 +121,13 @@ def plot_true_vs_pred(y, y_pred, set_name, model_name):
   axs[1].set_ylabel('Predicted $\Delta B/\Delta t$ ($kg/m^2/yr$)', fontsize = fontsize_labels)
   axs[1].autoscale()
 
-  # Calculate R² value for RF for each plot and add it to the plot
-  r2_for_0 = r2_score(y[:,0], y_pred[:,0])
-  r2_for_1 = r2_score(y[:,1], y_pred[:,1])
-  axs[0].text(0.05, 0.95, f'R² = {r2_for_0:.2e}', transform=axs[0].transAxes,
-              verticalalignment='top', fontsize=fontsize_labels)
-  axs[1].text(0.05, 0.95, f'R² = {r2_for_1:.2e}', transform=axs[1].transAxes,
-              verticalalignment='top', fontsize=fontsize_labels)
+  # Calculate R² value for each plot and add it to the plot
+  r2_dB_dt = r2_score(y[:,0], y_pred[:,0])
+  r2_dD_dt = r2_score(y[:,1], y_pred[:,1])
+  axs[0].text(0.95, 0.05, f'R² = {r2_dB_dt:.2f}', transform=axs[0].transAxes,
+              verticalalignment='bottom', horizontalalignment='right', fontsize=fontsize_labels)
+  axs[1].text(0.95, 0.05, f'R² = {r2_dD_dt:.2f}', transform=axs[1].transAxes,
+              verticalalignment='bottom', horizontalalignment='right', fontsize=fontsize_labels)
   
   # Use MaxNLocator for nice tick values
   n_ticks = 4
@@ -145,6 +145,12 @@ def plot_true_vs_pred(y, y_pred, set_name, model_name):
   cbar.set_label('Number of data points', fontsize=18)
   cbar.ax.tick_params(labelsize=18)
   cbar.ax.tick_params(axis='both', which='major', length=3, width=1)
+
+  # Add annotations outside the plot
+  letters = ['(a)', '(b)']
+  for ax, letter in zip(axs, letters):
+    ax.annotate(letter, xy=(0.05, 0.95), xycoords='axes fraction',
+                fontsize=fontsize_labels+2, ha='center', va='center')
 
   # Set font size for tick labels
   for ax in axs:

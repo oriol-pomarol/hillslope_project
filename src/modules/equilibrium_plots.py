@@ -194,12 +194,11 @@ def find_eq_points(Y_pred, B_grid, D_grid):
 def plot_streamplots(splot_data, B_grid, D_grid, colors, labels):
   
   # Define the plot sizes
-  fontsize_titles = 32
   fontsize_labels = 34
   fontsize_ticks = 30
-  fontsize_legend = 26
+  fontsize_legend = 30
   scatter_size = 50
-  point_sizes = [scatter_size]*4 + [scatter_size*2] + [scatter_size*4]
+  point_sizes = [scatter_size]*4 + [scatter_size*8]*2
  
 
   # Retrieve the number of subplots and the g values
@@ -207,7 +206,8 @@ def plot_streamplots(splot_data, B_grid, D_grid, colors, labels):
 
   # Create a grid of subplots with the default style
   plt.style.use('default')
-  fig, axs = plt.subplots(1,n_subplots, figsize=(12*n_subplots + 3, 12), dpi=300)
+  fig, axs = plt.subplots(1,n_subplots, figsize=(12*n_subplots + 3, 12), dpi=300,
+                          sharex=True, sharey=True)
 
   # If g_plot contains only one value, wrap axs in a list
   if not isinstance(axs, np.ndarray):
@@ -223,7 +223,7 @@ def plot_streamplots(splot_data, B_grid, D_grid, colors, labels):
   for i, g in enumerate(cfg.g_stream):
 
     # Set the title
-    axs[i].set_title(f'g = {g:.1f} kg/m$^2$/yr', fontsize=fontsize_titles, pad=20)
+    axs[i].set_title(f'g = {g:.1f} kg/m$^2$/yr', fontsize=fontsize_labels, pad=20)
 
     # Retrieve the results from the dictionary
     Y_pred = splot_data[g]['Y_pred']
@@ -272,13 +272,22 @@ def plot_streamplots(splot_data, B_grid, D_grid, colors, labels):
   plt.legend(handles=legend_handles, fontsize=fontsize_legend, loc='lower right')
 
   # Create a ScalarMappable with the same colormap and normalization
+  plt.tight_layout()
   sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, norm=norm)
   sm.set_array([])
-  cbar = fig.colorbar(sm, ax=ax)
-  cbar.set_label('Log reltive rate of change ($s^{-1}$)', labelpad=18, fontsize=fontsize_labels)
+  fig.subplots_adjust(right=0.92)
+  cbar_ax = fig.add_axes([0.93, 0.125, 0.02, 0.8])
+  cbar = fig.colorbar(sm, cax=cbar_ax)
+  cbar.ax.tick_params(labelsize=fontsize_ticks-4)
+  cbar.set_label('$log$ reltive rate of change ($s^{-1}$)', labelpad=18, fontsize=fontsize_labels)
+
+  # Add annotations outside the plot
+  letters = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)']
+  for ax, letter in zip(axs, letters):
+    ax.annotate(letter, xy=(0.05, 0.95), xycoords='axes fraction',
+                fontsize=fontsize_labels+2, ha='center', va='center')
 
   # Save the figure
-  plt.tight_layout()
   plt.savefig(paths.figures / 'streamplot_nullclines.png', dpi=300)
 
   return
@@ -294,30 +303,30 @@ def plot_eq_points(eq_points, colors, labels):
 
   # Plot the equilibrium points
   plt.style.use('seaborn-v0_8')
-  fig, axs = plt.subplots(2, figsize=(22, 13))
+  fig, axs = plt.subplots(2, figsize=(22, 11))
 
   # For biomass
   # Plot the unstable equilibrium points in light green
   axs[0].scatter(eq_points[eq_points['type'] == 'unstable']['g'],
                 eq_points[eq_points['type'] == 'unstable']['B'],
-                color=colors[0], label=labels[0],
+                color=colors[0], label='Unstable equilibria',
                 s=scatter_size)
   # Plot the stable equilibrium points in dark green
   axs[0].scatter(eq_points[eq_points['type'] == 'stable']['g'],
                 eq_points[eq_points['type'] == 'stable']['B'],
-                color=colors[1], label=labels[1],
+                color=colors[1], label='Stable equilibria',
                 s=scatter_size)
 
   # For soil depth
   # Plot the unstable equilibrium points in light blue
   axs[1].scatter(eq_points[eq_points['type'] == 'unstable']['g'],
                 eq_points[eq_points['type'] == 'unstable']['D'],
-                color= colors[2], label=labels[2],
+                color= colors[2], label='Unstable equilibria',
                 s=scatter_size)
   # Plot the stable equilibrium points in dark blue
   axs[1].scatter(eq_points[eq_points['type'] == 'stable']['g'],
                 eq_points[eq_points['type'] == 'stable']['D'],
-                color=colors[3], label=labels[3],
+                color=colors[3], label='Stable equilibria',
                 s=scatter_size)
 
   # Set the axis limits and labels
@@ -341,6 +350,12 @@ def plot_eq_points(eq_points, colors, labels):
   # Add a legend
   axs[0].legend(loc='upper right', fontsize=fontsize_labels)
   axs[1].legend(loc='upper right', fontsize=fontsize_labels)
+
+  # Add annotations the plot
+  axs[0].annotate('(a)', xy=(0.02, 0.84), xycoords='axes fraction',
+                  fontsize=fontsize_labels+4, ha='left', va='center')
+  axs[1].annotate('(b)', xy=(0.02, 0.89), xycoords='axes fraction',
+                  fontsize=fontsize_labels+4, ha='left', va='center')
 
   # Save the figure
   plt.tight_layout()

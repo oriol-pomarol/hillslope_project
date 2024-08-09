@@ -259,51 +259,58 @@ def plot_surface_comparison(Y_pred, Y_eq, Y_pred_mm, Y_eq_mm,
 
   # Plot the surface and eq. points for dB/dt and dD/dt
   for i in range(2):
-      for j in range(2):
+    for j in range(2):
           
-          # Plot the surface
-          ax[i, j].plot_surface(B_grid, D_grid, surface_data[i][j],
-                                cmap=my_cmap_desaturated, linewidth=0.5,
-                                edgecolor = 'black', alpha=1, shade=False,
-                                rstride=cfg.scale_surface, cstride=cfg.scale_surface,
-                                norm=norm_B if i == 0 else norm_D)
-          ax[i, j].set_zlim(np.min(surface_data[i][j]), np.max(surface_data[i][j]))
+      # Plot the surface
+      ax[i, j].plot_surface(B_grid, D_grid, surface_data[i][j],
+                            cmap=my_cmap_desaturated, linewidth=0.5,
+                            edgecolor = 'black', alpha=1, shade=False,
+                            rstride=cfg.scale_surface, cstride=cfg.scale_surface,
+                            norm=norm_B if i == 0 else norm_D)
+      ax[i, j].set_zlim(np.min(surface_data[i][j]), np.max(surface_data[i][j]))
+      
+      # Plot the equilibrium points
+      ax[i, j].plot(B_grid[eq_data[i][j]['unstable']], D_grid[eq_data[i][j]['unstable']],
+                    surface_data[i][j][eq_data[i][j]['unstable']],
+                    color='dimgray', linestyle='', marker='o', markersize=5, zorder=4)
+      ax[i, j].plot(B_grid[eq_data[i][j]['stable']], D_grid[eq_data[i][j]['stable']],
+                    surface_data[i][j][eq_data[i][j]['stable']],
+                    color='k', linestyle='', marker='o', markersize=5, zorder=5)
           
-          # Plot the equilibrium points
-          ax[i, j].plot(B_grid[eq_data[i][j]['unstable']], D_grid[eq_data[i][j]['unstable']],
-                        surface_data[i][j][eq_data[i][j]['unstable']],
-                        color='dimgray', linestyle='', marker='o', markersize=5, zorder=4)
-          ax[i, j].plot(B_grid[eq_data[i][j]['stable']], D_grid[eq_data[i][j]['stable']],
-                        surface_data[i][j][eq_data[i][j]['stable']],
-                        color='k', linestyle='', marker='o', markersize=5, zorder=5)
-              
-          # Add titles to the columns
-          if i == 0:
-              ax[i, j].set_title("EB-MM" if j == 0 else "ML-MM", fontsize=20)
-
+      # Add titles to the columns
+      if i == 0:
+        ax[i, j].set_title("EB-MM" if j == 0 else "ML-MM", fontsize=20)
           
   # Format axis
   for i in range(2):
-      for j in range(2):
-          ax[i, j].set_zticks([min_max[i][0], min_max[i][1]])
-          ax[i, j].set_zlim(min_max[i][0], min_max[i][1])
-          ax[i, j].get_proj = lambda i=i, j=j: np.dot(Axes3D.get_proj(ax[i, j]), np.diag([1, 1, 0.3, 1]))
-          ax[i, j].zaxis.set_major_formatter(FormatStrFormatter('%.3f' if i == 0 else '%.4f'))
-          ax[i, j].set_zlabel('Biomass net\ngrowth ($kg/m^2/yr$)' if i == 0 else 'Soil depth\nincrease (m/yr)',
-                              labelpad=45, fontsize=fontsize_labels-2)
-          ax[i, j].xaxis.set_major_locator(plt.MaxNLocator(3, prune='lower'))
-          ax[i, j].yaxis.set_major_locator(plt.MaxNLocator(3))
-          ax[i, j].tick_params(axis='both', which='major', labelsize=20)
-          ax[i, j].tick_params(axis='z', pad=15, labelsize=20)
-          ax[i, j].set_xlim(cfg.B_lim,0)
-          ax[i, j].set_ylim(0,cfg.D_lim)
-          ax[i, j].set_xlabel('Biomass ($kg/m^2$)', labelpad=25, fontsize=fontsize_labels)
-          ax[i, j].set_ylabel('Soil depth ($m$)', labelpad=25, fontsize=fontsize_labels)
+    for j in range(2):
+      ax[i, j].set_zticks([min_max[i][0], min_max[i][1]])
+      ax[i, j].set_zlim(min_max[i][0], min_max[i][1])
+      ax[i, j].get_proj = lambda i=i, j=j: np.dot(Axes3D.get_proj(ax[i, j]), np.diag([1, 1, 0.3, 1]))
+      ax[i, j].zaxis.set_major_formatter(FormatStrFormatter('%.3f' if i == 0 else '%.4f'))
+      ax[i, j].set_zlabel('Biomass net\ngrowth ($kg/m^2/yr$)' if i == 0 else 'Soil depth\nincrease (m/yr)',
+                          labelpad=45, fontsize=fontsize_labels-2)
+      ax[i, j].xaxis.set_major_locator(plt.MaxNLocator(3, prune='lower'))
+      ax[i, j].yaxis.set_major_locator(plt.MaxNLocator(3))
+      ax[i, j].tick_params(axis='both', which='major', labelsize=20)
+      ax[i, j].tick_params(axis='z', pad=15, labelsize=20)
+      ax[i, j].set_xlim(cfg.B_lim,0)
+      ax[i, j].set_ylim(0,cfg.D_lim)
+      ax[i, j].set_xlabel('Biomass ($kg/m^2$)', labelpad=25, fontsize=fontsize_labels)
+      ax[i, j].set_ylabel('Soil depth ($m$)', labelpad=25, fontsize=fontsize_labels)
 
-          # Adjust the z-axis tick labels
-          for t in ax[i, j].zaxis.get_major_ticks():
-              t.label1.set_va('center')
+      # Adjust the z-axis tick labels
+      for t in ax[i, j].zaxis.get_major_ticks():
+        t.label1.set_va('center')
 
+
+  # Add letters to the subplots
+  letters = ['(a)', '(b)', '(c)', '(d)']
+  for i, letter in enumerate(letters):
+    row, col = divmod(i, ax.shape[1])
+    ax[row, col].annotate(letter, xy=(0.15, 0.85), xycoords='axes fraction',
+                          fontsize=fontsize_labels, ha='center', va='center')
+      
   # Adjust the space between subplots
   plt.subplots_adjust(hspace=-0.25, wspace=-0.4)
 
