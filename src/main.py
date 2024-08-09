@@ -11,6 +11,7 @@ from modules.forward_simulation import forward_simulation
 from modules.surface_plots import surface_plots
 from modules.colormesh_plots import colormesh_plots
 from modules.tipping_evolution import tipping_evolution
+from modules.equilibrium_plots import equilibrium_plots
 from config import main as cfg
 from config import paths
 print('Successfully imported libraries and modules.')
@@ -22,8 +23,9 @@ start_time = time.time()
 run_summary = "***RUN SUMMARY***"
 
 # Prepare the data for training
-data_summary = data_preparation()
-run_summary += data_summary
+if cfg.process_data:
+  data_summary = data_preparation()
+  run_summary += data_summary
 
 # Train the models if specified
 if cfg.model_training != 'none':
@@ -46,15 +48,19 @@ run_summary += nn_summary
 # Plot the predicted rate of change for B and D at critical g if in the plots list
 if 'surface' in cfg.plots:
   run_summary += surface_plots('nn')
-  surface_plots('rf')
+  # surface_plots('rf')
 
 # Plot colormeshes related to the observations available if in the plots list
 if 'colormesh' in cfg.plots:
   run_summary += colormesh_plots()
 
-# Plot the system evolutionat the tipping point if in the plots list
+# Plot the system evolution at the tipping point if in the plots list
 if 'tipping' in cfg.plots:
   run_summary += tipping_evolution('nn')
+
+# Plot the system equilibria if in the plots list
+if 'equilibrium' in cfg.plots:
+  run_summary += equilibrium_plots('nn')
 
 # Make a prediction of the evolution of the system for each simulation in X_ev
 if cfg.fwd_sim:
