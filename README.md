@@ -13,7 +13,7 @@ In this project, a Random Forest and a Neural Network are used to simulate the a
 
 ## Installation and usage
 
-The scripts are all ran in python, so a conda environment will need to be created from the ```env.yml``` file provided. If needed to run on detailed model data, the training data should be added to the ```data/raw``` folder, and anything that should be used for testing the models in forward simulation should be added to the ```data/raw/fwd_sim``` folder.
+The scripts are all ran in python, so a conda environment will need to be created from the ```env.yml``` file provided. If needed to run on detailed model data, the training data (accessible at https://doi.org/10.5281/zenodo.13384361) should be added to the ```data/raw``` folder. Anything that should be used for testing the models in forward simulation should be added to the ```data/raw/fwd_sim``` folder. 
 
 To configure what and how to run it, one can do so in the ```src/config.py```. An explanation of each of the parameters can be found inside that file. Once the configuration values are set, it is only needed to run the ```src/main.py``` script. The outputs will be stored in each of the subfolders inside the ```results``` folder.
 
